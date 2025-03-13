@@ -74,7 +74,7 @@ def idm_acceleration(current_speed, front_vehicle_speed, gap,  front_vehicle_id=
     return min(max(acceleration,MIN_ACCEL),MAX_ACCEL)
 
 
-#11
+#private
 # 线程类定义
 class VehicleController(threading.Thread):
     def __init__(self, vehicle_id_):
