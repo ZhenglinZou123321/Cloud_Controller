@@ -6,7 +6,11 @@ import os
 import json
 import pandas as pd
 import csv
+from utils.VehicleController_utils import *
 
+dt = 0.2
+N=40
+L_safe = 4 + 3 #4米车长，3米间距
 
 
 # 获取当前脚本所在的目录
@@ -80,7 +84,7 @@ if __name__ == '__main__':
                 # 线程的关闭和清除，放在线程类里
                 if vehicle_id[0:3] == "CAV":
                     traci.vehicle.setColor(vehicle_id, (255, 0, 0))
-                    controller = VehicleController(vehicle_id)
+                    controller = VehicleController(vehicle_id,dt)
                     controller.start()
                     vehicle_threads[vehicle_id] = controller
                     print(f"Started thread for vehicle {vehicle_id}")
