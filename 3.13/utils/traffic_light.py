@@ -304,7 +304,7 @@ class DDQNAgent:
 
 
 class TrafficLightController(threading.Thread):
-    def __init__(self, Traffic_Signal_id_,traffic_light_to_lanes_,Intersection_Edge_Dict,lane_index_dict,lane_adj_matrix,N,dt,L_safe):
+    def __init__(self, Traffic_Signal_id_,traffic_light_to_lanes_,lane_index_dict,lane_adj_matrix,N,dt,L_safe):
         threading.Thread.__init__(self)
         self.Traffic_Signal_id = Traffic_Signal_id_
         self.agent = DDQNAgent(state_size,len(Action_list))

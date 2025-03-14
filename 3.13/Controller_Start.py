@@ -9,6 +9,7 @@ import csv
 from utils.VehicleController_utils import *
 from utils.Solver_utils import *
 from utils.junction_utils import *
+from utils.traffic_light import TrafficLightController
 '''
 dt = 0.2
 N=40
@@ -87,7 +88,10 @@ if __name__ == '__main__':
 
     # 信号灯线程创建
     #******************************
-    
+    for junc in Intelligent_Sigal_List:
+        controller = TrafficLightController(junc,traffic_light_to_lanes,lane_index_dict,lane_adj_matrix,N,dt,L_safe)
+        controller.start()
+        
 
     # 开始仿真
     print("ready to start")
