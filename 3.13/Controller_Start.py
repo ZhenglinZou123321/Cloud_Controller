@@ -8,6 +8,7 @@ import pandas as pd
 import csv
 from utils.VehicleController_utils import *
 from utils.Solver_utils import *
+from utils.junction_utils import *
 '''
 dt = 0.2
 N=40
@@ -65,8 +66,10 @@ with open('traffic_data_gaussian.csv', mode='w', newline='') as file:
 # 所要管控的路口id
 Intelligent_Sigal_List = ['j5', 'j6', 'j7', 'j10','j11','j12']
 
-# 车辆线程字典
+# 线程字典
 vehicle_threads = {}
+junction_threads = {}
+
 
 # 仿真参数
 step = 0 # 仿真步
@@ -75,11 +78,13 @@ if __name__ == '__main__':
 
     # 路口线程创建
     #******************************
-
+    for junc in Intelligent_Sigal_List:
+        controller = JunctionController(junc,traffic_light_to_lanes,N,dt,L_safe)
+        controller.start()
 
     # 信号灯线程创建
     #******************************
-
+    
 
     # 开始仿真
     print("ready to start")
