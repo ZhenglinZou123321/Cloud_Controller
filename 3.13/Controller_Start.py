@@ -7,10 +7,16 @@ import json
 import pandas as pd
 import csv
 from utils.VehicleController_utils import *
-
+from utils.Solver_utils import *
+'''
 dt = 0.2
 N=40
-L_safe = 4 + 3 #4米车长，3米间距
+L_safe = 4 + 3 #4米车长，3米间距'''
+
+#详细参数在Solver_utils中统一设置
+
+
+
 
 
 # 获取当前脚本所在的目录
@@ -45,6 +51,11 @@ with open("Graph/traffic_light_info.json", "r") as f:
     data = json.load(f)
 lane_to_traffic_light = data["lane_to_traffic_light"]
 traffic_light_to_lanes = data["traffic_light_to_lanes"]
+# 遍历字典中的每个键值对
+for key, value in traffic_light_to_lanes.items():
+    # 将列表转换为集合以去除重复元素
+    traffic_light_to_lanes[key] = list(set(value))
+
 
 # 创建交通数据记录表
 with open('traffic_data_gaussian.csv', mode='w', newline='') as file:

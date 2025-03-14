@@ -1,8 +1,9 @@
 import threading
 import traci
-
+import copy
+from Solver_utils import *
 # 车辆参数
-MAX_SPEED = 11  # 最大速度 (m/s)
+'''MAX_SPEED = 11  # 最大速度 (m/s)
 MIN_SPEED = 0
 MAX_ACCEL = 3  # 最大加速度 (m/s^2)
 MIN_ACCEL = -20
@@ -13,7 +14,7 @@ T = 1.5  # 期望车头时距 (s)，可根据实际情况调整
 a_max = MAX_ACCEL  # 最大加速度 (m/s²)，与前面已定义的保持一致或按需调整
 b = -1*MIN_ACCEL  # 舒适制动减速度 (m/s²)，可根据实际情况调整
 s_0 = 2  # 最小间距 (m)，可根据实际情况调整
-delta = 4  # 速度影响指数参数，可根据实际情况调整
+delta = 4  # 速度影响指数参数，可根据实际情况调整'''
 
 
 
@@ -61,6 +62,7 @@ class VehicleController(threading.Thread):
         self.acc_control = 0
         self.idm_acc = 0
         self.control_signal = []
+        self.control_signal_new = []
         self.time_when_cal = 0
         self.dt = dt
     def get_control_signal(self,time_now, dt):
@@ -107,6 +109,7 @@ class VehicleController(threading.Thread):
                         
                 # 速度施加环节
                 if self.vehicle_id[0:3] == "CAV":
+                    self.control_signal = list(self.control_signal_new)
                     if len(self.control_signal) != 0:
                         traci.vehicle.setSpeedMode(self.vehicle_id, 00000)  # 关闭跟驰模型
                         self.mpc_acc = self.get_control_signal(step, self.dt)
@@ -141,6 +144,7 @@ class VehicleController(threading.Thread):
                         print(f"{self.vehicle_id}已施加加速度控制量：{self.acc_control}")
             except:
                 print(f"{self.vehicle_id} 施加加速度控制量失败")         
+
 
     def stop(self):
         self.running = False
