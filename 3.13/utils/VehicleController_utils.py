@@ -128,105 +128,19 @@ class VehicleController(threading.Thread):
                                 print(f"{self.vehicle_id} 施加IDM控制量为：{self.acc_control}")
                                 traci.vehicle.setColor(self.vehicle_id, (255, 0, 0))  # IDM = red
                         else:
+                            # 如果没有idm控制量，则施加mpc控制量
                             self.acc_control = self.mpc_acc
                             print(f"{self.vehicle_id} 施加MPC控制量为：{self.acc_control}")
                             traci.vehicle.setColor(self.vehicle_id, (0, 0, 255))  # MPC =  blue
-                        #print(self.acc_control)
+
+                        # 如果经过上述操作后，得到了一个加速度控制量
                         if self.acc_control != None:
                             traci.vehicle.setAcceleration(self.vehicle_id, self.acc_control, 1)
                         else:
                             traci.vehicle.setAcceleration(self.vehicle_id, 0.0, 1)
-                        #print(control_signal[self.vehicle_id].control_list_show())
                         print(f"{self.vehicle_id}已施加加速度控制量：{self.acc_control}")
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                if self.vehicle_id in traci.vehicle.getIDList():
-                    # 示例控制逻辑：设置车辆速度
-                    self.speed = traci.vehicle.getSpeed(self.vehicle_id)
-                    print("iiiii")
-                    self.front_info = traci.vehicle.getLeader(self.vehicle_id)
-                    print("ddddd")
-                    self.idm_acc = None
-                    if self.front_info != None:
-                        self.front_id,self.gap = self.front_info
-                        print(f"{self.vehicle_id}的前车是{self.front_id}")
-                    if self.front_info != None and traci.vehicle.getLaneID(self.vehicle_id) == traci.vehicle.getLaneID(self.front_id):
-                        print('jjj')
-                        self.idm_acc = idm_acceleration(self.speed, traci.vehicle.getSpeed(self.front_id), self.gap, front_vehicle_id=None)
-                        print('jjggg')
-                    else:
-                        print('ggg')
-                        self.lane_now = traci.vehicle.getLaneID(self.vehicle_id)
-                        self.phase,self.remaining_time = get_remaining_phase_and_time(self.lane_now)
-                        if self.phase == 'r' or self.phase == 'y':
-                            self.lane_length = traci.lane.getLength(self.lane_now)
-                            self.idm_acc = idm_acceleration(self.speed, 0.0,
-                                                        self.lane_length-traci.vehicle.getLanePosition(self.vehicle_id),
-                                                        front_vehicle_id=None)
-                            print("kkk")
-                            print(self.lane_now)
-                            print(self.vehicle_id)
-                            print(self.lane_length)
-                            print(traci.vehicle.getLanePosition(self.vehicle_id))
-                            print(self.idm_acc)
-                    if self.vehicle_id[0:3] == "CAV":
-                        print('ututut')
-                        #print(control_signal[self.vehicle_id].control_list)
-                        #print(len(control_signal[self.vehicle_id].control_list))
-                        #print('yhyhyh')
-                        if len(control_signal[self.vehicle_id].control_list) != 0:
-                            print('cvcvcvcv')
-                            traci.vehicle.setSpeedMode(self.vehicle_id, 00000)  # 关闭跟驰模型
-                            print('lllll')
-                            self.mpc_acc = control_signal[self.vehicle_id].control_signal(time_now, dt)
-                            print('mmmmmmm')
-                            if self.idm_acc != None:
-                                #self.acc_control = control_signal[self.vehicle_id].control_signal(time_now, dt)
-                                print(f"{self.vehicle_id} MPC控制量为：{self.mpc_acc}, IDM控制量为：{self.idm_acc}")
-                                if self.mpc_acc != None:
-                                    if self.mpc_acc < self.idm_acc:
-                                        self.acc_control = control_signal[self.vehicle_id].control_signal(time_now, dt)
-                                        print(f"{self.vehicle_id} 施加MPC控制量为：{self.acc_control}")
-                                        traci.vehicle.setColor(self.vehicle_id, (0, 0, 255)) # MPC = blue
-                                    else:
-                                        self.acc_control = self.idm_acc
-                                        print(f"{self.vehicle_id} 施加IDM控制量为：{self.acc_control}")
-                                        traci.vehicle.setColor(self.vehicle_id, (255, 0, 0))  # IDM = red
-                                else:
-                                    self.acc_control = self.idm_acc
-                                    print(f"{self.vehicle_id} 施加IDM控制量为：{self.acc_control}")
-                                    traci.vehicle.setColor(self.vehicle_id, (255, 0, 0))  # IDM = red
-                            else:
-                                self.acc_control = self.mpc_acc
-                                print(f"{self.vehicle_id} 施加MPC控制量为：{self.acc_control}")
-                                traci.vehicle.setColor(self.vehicle_id, (0, 0, 255))  # MPC =  blue
-                            #print(self.acc_control)
-                            if self.acc_control != None:
-                                traci.vehicle.setAcceleration(self.vehicle_id, self.acc_control, 1)
-                            else:
-                                traci.vehicle.setAcceleration(self.vehicle_id, 0.0, 1)
-                            #print(control_signal[self.vehicle_id].control_list_show())
-                            print(f"{self.vehicle_id}已施加加速度控制量：{self.acc_control}")
-                # new_speed = speed + 1  # 简单地增加速度
-                # traci.vehicle.setSpeed(self.vehicle_id, new_speed)
-                # print(f"Vehicle {self.vehicle_id} speed updated to {new_speed}")
-                else:
-                    # 如果车辆离开仿真，停止线程
-                    print(f"Vehicle {self.vehicle_id} has left the simulation.")
-                    self.running = False
-            except Exception as e:
-                print(f"Error controlling vehicle {self.vehicle_id}: {e}")
-                #self.running = False
-
-            # 控制逻辑运行间隔
-            #time.sleep(0.0001)
+            except:
+                print(f"{self.vehicle_id} 施加加速度控制量失败")         
 
     def stop(self):
         self.running = False
