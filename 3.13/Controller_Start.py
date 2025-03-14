@@ -92,7 +92,6 @@ if __name__ == '__main__':
         controller = TrafficLightController(junc,traffic_light_to_lanes,lane_index_dict,lane_adj_matrix,N,dt,L_safe)
         controller.start()
         
-
     # 开始仿真
     print("ready to start")
 

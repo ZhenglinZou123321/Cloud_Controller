@@ -317,7 +317,6 @@ class TrafficLightController(threading.Thread):
         self.N = N
         self.dt = dt
         self.L_safe = L_safe
-        self.Intersection_Edge_Dict = Intersection_Edge_Dict
         self.lane_index_dict = lane_index_dict
         self.lane_adj_matrix = lane_adj_matrix
 
