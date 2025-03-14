@@ -73,8 +73,31 @@ class VehicleController(threading.Thread):
 
     def run(self):
         global step
+        global previous_vehicle_edges
+        global net
+        global junction_counts
         while self.running and traci.simulation.getMinExpectedNumber() > 0 and self.vehicle_id[0:3] == "CAV":
             print(f"{self.vehicle_id[0:3]} thread running")
+
+            # 车流量计数
+            # 获取车辆当前所在的 edge
+            current_edge = traci.vehicle.getRoadID(self.vehicle_id)
+            # 如果车辆在网络的有效 edge 上
+            if current_edge and current_edge[0] != ":":
+                # 获取车辆的上一个 edge
+                previous_edge = previous_vehicle_edges.get(self.vehicle_id)
+                # 检查车辆是否从一个 edge 转移到另一个 edge
+                if previous_edge and previous_edge != current_edge:
+                    # 获取 previous_edge 的终点 junction
+                    to_junction = net.getEdge(previous_edge).getToNode().getID()
+                    # 在 junction_counts 中递增计数
+                    if to_junction in junction_counts:
+                        junction_counts[to_junction] += 1
+                    else:
+                        junction_counts[to_junction] = 1
+                # 更新车辆的上一个 edge 为当前 edge
+                previous_vehicle_edges[self.vehicle_id] = current_edge
+
             try:
                 # 检查车辆是否仍然在仿真中
                 try:

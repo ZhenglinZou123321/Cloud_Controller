@@ -19,6 +19,9 @@ Train_Or_Not = False
 
 Least_Check_Time = 3
 
+train_gap = 20
+train_batchsize = 32
+
 def get_remaining_phase_and_time(lane_id): #获取信号灯当前相位和剩余时间
     # 按照固定字符进行分割
     x, rest = lane_id.split("t", 1)  # 分割出 X 和剩余部分
@@ -335,6 +338,7 @@ class TrafficLightController(threading.Thread):
  
     def run(self):
         global step
+        global junction_counts
         while self.running and traci.simulation.getMinExpectedNumber() > 0:
             if traci.trafficlight.getPhase(self.Traffic_Signal_id) in [1,3,5,7] and get_remaining_phase_time(self.Traffic_Signal_id)<Least_Check_Time and self.agent.CheckOrNot is False:
                 next_state,new_state = get_state(self.Traffic_Signal_id,self.Intersection_Edge_Dict,self.lane_index_dict,self.lane_adj_matrix,traci.trafficlight.getPhase(self.Traffic_Signal_id))
@@ -343,8 +347,27 @@ class TrafficLightController(threading.Thread):
                 self.agent.step += 1
                 self.agent.action = self.agent.act(next_state)
                 self.agent.state = new_state
-                #traci.trafficlight.setPhase(Traffic_Signal_id, Agent_List[action])
+                #traci.trafficlight.setPhase(self.Traffic_Signal_id, Action_List[action])    设置相位  不明白为什么这里注释了
+                # 应该是改用了setPhaseDuration的方法
                 self.agent.reward_delta = reward
                 self.agent.total_reward += reward
-                self.agent.CheckOrNot = True        
+                self.agent.CheckOrNot = True       
+
+        if traci.trafficlight.getPhase(self.Traffic_Signal_id) in [0,2,4,6] and self.agent.CheckOrNot is True and get_remaining_phase_time(self.Traffic_Signal_id)>Least_Check_Time:
+            temp_duration = get_remaining_phase_time(self.Traffic_Signal_id)
+            traci.trafficlight.setPhaseDuration(self.Traffic_Signal_id, float(Action_list[self.agent.action]))
+            #print(f"Agent: {Traffic_Signal_id} 原:{temp_duration} 现在:{get_remaining_phase_time(Traffic_Signal_id)} ")
+            self.agent.CheckOrNot = False
+            if self.agent.step%train_gap == 0 and self.agent.step>=train_batchsize and Train_Or_Not:
+                self.agent.train(train_batchsize)
+                self.agent.update_target_network()
+                torch.save(self.agent.q_network.state_dict(), f'models/{self.Traffic_Signal_id}_model.pth')
+                print(f"Agent: {self.Traffic_Signal_id} Reward = {self.agent.reward_delta} Epsilon = {self.agent.epsilon} Trained_time = {self.agent.Trained_time}")
+
+
+
+
+
+
+
 

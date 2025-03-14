@@ -70,6 +70,9 @@ Intelligent_Sigal_List = ['j5', 'j6', 'j7', 'j10','j11','j12']
 vehicle_threads = {}
 junction_threads = {}
 
+# 交通流量计数字典
+previous_vehicle_edges = {}
+junction_counts = {}
 
 # 仿真参数
 step = 0 # 仿真步
