@@ -3,10 +3,14 @@ import threading
 import time
 import copy
 import numpy as np
-from Solver_utils import *
+from utils.Solver_utils import *
 import torch
 import torch.nn as nn
 import random
+from collections import deque
+import torch.optim as optim
+
+
 
 
 
@@ -90,6 +94,7 @@ def get_remaining_phase_time(traffic_light_id): #获取信号灯剩余时间
     return max(remaining_time, 0)  # 防止负值
 
 def get_lane_state(lane_id,lane_dict,lane_m):
+    global traffic_light_to_lanes
     traffic_signal_dict = {'r':0,'g':1,'y':2}
     edge_id = traci.lane.getEdgeID(lane_id)
     to_junction = traci.edge.getToJunction(edge_id)

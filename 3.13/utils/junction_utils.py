@@ -3,7 +3,7 @@ import threading
 import time
 import copy
 import numpy as np
-from Solver_utils import *
+from utils.Solver_utils import *
 
 class JunctionController(threading.Thread):
     def __init__(self, junction_id_,traffic_light_to_lanes_,N,dt,L_safe):
@@ -36,7 +36,7 @@ class JunctionController(threading.Thread):
 
     def update_cav_speeds(self):
         start_time = time.time()
-        global vehicle_threads
+        global vehicle_threads,N,dt,MAX_SPEED,MIN_SPEED,MAX_ACCEL,MIN_ACCEL,L_safe
         now_time = traci.simulation.getTime()
         for lane_id in self.traffic_light_to_lanes[self.junction_id]:
             num_CAV = 0

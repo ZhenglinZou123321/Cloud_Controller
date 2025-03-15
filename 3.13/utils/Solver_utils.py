@@ -16,22 +16,7 @@ import os
 import sys
 import pandas as pd
 
-# 车辆参数
-MAX_SPEED = 11  # 最大速度 (m/s)
-MIN_SPEED = 0
-MAX_ACCEL = 3  # 最大加速度 (m/s^2)
-MIN_ACCEL = -20
 
-
-# 信号灯周期和时间参数
-GREEN_TIME = 30  # 绿灯时间
-RED_TIME = 30  # 红灯时间
-CYCLE_TIME = GREEN_TIME + RED_TIME
-dt = 0.2
-N=40
-L_safe = 4 + 3 #4米车长，3米间距
-# 初始化交叉口车辆列表
-vehicles = []
 
 
 

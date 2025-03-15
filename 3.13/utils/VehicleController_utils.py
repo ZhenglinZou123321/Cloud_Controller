@@ -1,20 +1,8 @@
 import threading
 import traci
 import copy
-from Solver_utils import *
-# 车辆参数
-'''MAX_SPEED = 11  # 最大速度 (m/s)
-MIN_SPEED = 0
-MAX_ACCEL = 3  # 最大加速度 (m/s^2)
-MIN_ACCEL = -20
+from utils.Solver_utils import *
 
-# IDM模型参数
-V_0 = MAX_SPEED  # 期望速度 (m/s)，可根据实际情况调整
-T = 1.5  # 期望车头时距 (s)，可根据实际情况调整
-a_max = MAX_ACCEL  # 最大加速度 (m/s²)，与前面已定义的保持一致或按需调整
-b = -1*MIN_ACCEL  # 舒适制动减速度 (m/s²)，可根据实际情况调整
-s_0 = 2  # 最小间距 (m)，可根据实际情况调整
-delta = 4  # 速度影响指数参数，可根据实际情况调整'''
 
 
 
@@ -31,6 +19,7 @@ def idm_acceleration(current_speed, front_vehicle_speed, gap,  front_vehicle_id=
     返回:
     float: 根据IDM模型计算出的当前车辆加速度 (m/s²)
     """
+    global s_0,T,a_max,b,V_0,delta,MIN_ACCEL,MAX_ACCEL
     relative_speed = current_speed - front_vehicle_speed
     s_star = s_0 + current_speed * T + (current_speed * relative_speed) / (2 * np.sqrt(a_max * b))
     acceleration = a_max * (1 - (current_speed / V_0) ** delta - (s_star / gap) ** 2)
