@@ -9,6 +9,7 @@ import torch.nn as nn
 import random
 from collections import deque
 import torch.optim as optim
+import Global_Vars
 
 
 
@@ -94,11 +95,11 @@ def get_remaining_phase_time(traffic_light_id): #获取信号灯剩余时间
     return max(remaining_time, 0)  # 防止负值
 
 def get_lane_state(lane_id,lane_dict,lane_m):
-    global traffic_light_to_lanes
+
     traffic_signal_dict = {'r':0,'g':1,'y':2}
     edge_id = traci.lane.getEdgeID(lane_id)
     to_junction = traci.edge.getToJunction(edge_id)
-    if to_junction in traffic_light_to_lanes.keys():
+    if to_junction in Global_Vars.traffic_light_to_lanes.keys():
         controlled_lanes = traci.trafficlight.getControlledLanes(to_junction)
         current_phase_state = traci.trafficlight.getRedYellowGreenState(to_junction)
         lane_index = controlled_lanes.index(lane_id)
@@ -341,12 +342,11 @@ class TrafficLightController(threading.Thread):
 
  
     def run(self):
-        global step
-        global junction_counts
+
         while self.running and traci.simulation.getMinExpectedNumber() > 0:
             if traci.trafficlight.getPhase(self.Traffic_Signal_id) in [1,3,5,7] and get_remaining_phase_time(self.Traffic_Signal_id)<Least_Check_Time and self.agent.CheckOrNot is False:
                 next_state,new_state = get_state(self.Traffic_Signal_id,self.Intersection_Edge_Dict,self.lane_index_dict,self.lane_adj_matrix,traci.trafficlight.getPhase(self.Traffic_Signal_id))
-                reward = get_reward(self.Traffic_Signal_id,self.agent,Action_list,junction_counts)
+                reward = get_reward(self.Traffic_Signal_id,self.agent,Action_list,Global_Vars.junction_counts)
                 self.agent.memory.append((self.agent.state, self.agent.action, reward, next_state))
                 self.agent.step += 1
                 self.agent.action = self.agent.act(next_state)

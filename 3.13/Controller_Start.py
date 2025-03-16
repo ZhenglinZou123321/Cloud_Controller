@@ -67,13 +67,13 @@ if __name__ == '__main__':
     # 路口线程创建
     #******************************
     for junc in Intelligent_Sigal_List:
-        controller = JunctionController(junc,Global_Vars.traffic_light_to_lanes,N,dt,L_safe)
+        controller = JunctionController(junc,Global_Vars.traffic_light_to_lanes,Global_Vars.N,Global_Vars.dt,Global_Vars.L_safe)
         controller.start()
 
     # 信号灯线程创建
     #******************************
     for junc in Intelligent_Sigal_List:
-        controller = TrafficLightController(junc,Global_Vars.traffic_light_to_lanes,Global_Vars.lane_index_dict,Global_Vars.lane_adj_matrix,N,dt,L_safe)
+        controller = TrafficLightController(junc,Global_Vars.traffic_light_to_lanes,Global_Vars.lane_index_dict,Global_Vars.lane_adj_matrix,Global_Vars.N,Global_Vars.dt,Global_Vars.L_safe)
         controller.start()
         
     # 开始仿真
@@ -90,7 +90,7 @@ if __name__ == '__main__':
                 # 线程的关闭和清除，放在线程类里
                 if vehicle_id[0:3] == "CAV":
                     traci.vehicle.setColor(vehicle_id, (255, 0, 0))
-                    controller = VehicleController(vehicle_id,dt)
+                    controller = VehicleController(vehicle_id,Global_Vars.dt)
                     controller.start()
                     Global_Vars.vehicle_threads[vehicle_id] = controller
                     print(f"Started thread for vehicle {vehicle_id}")

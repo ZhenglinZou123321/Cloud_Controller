@@ -4,6 +4,9 @@ import time
 import copy
 import numpy as np
 from utils.Solver_utils import *
+import Global_Vars
+import subprocess
+import platform
 
 class JunctionController(threading.Thread):
     def __init__(self, junction_id_,traffic_light_to_lanes_,N,dt,L_safe):
@@ -19,6 +22,8 @@ class JunctionController(threading.Thread):
         self.N = N
         self.dt = dt
         self.L_safe = L_safe
+        self.log_file = f"junction_{self.junction_id}.log"
+
     def get_last_quarter_every_lane(self):
         lane_ids = self.traffic_light_to_lanes[self.junction_id]
         lane_vehicles = {}
@@ -36,7 +41,6 @@ class JunctionController(threading.Thread):
 
     def update_cav_speeds(self):
         start_time = time.time()
-        global vehicle_threads,N,dt,MAX_SPEED,MIN_SPEED,MAX_ACCEL,MIN_ACCEL,L_safe
         now_time = traci.simulation.getTime()
         for lane_id in self.traffic_light_to_lanes[self.junction_id]:
             num_CAV = 0
@@ -51,8 +55,8 @@ class JunctionController(threading.Thread):
             for vehicle_id in vehicles_list_this_lane:
 
                 if vehicle_id[0:3] == "CAV":
-                    vehicle_threads[vehicle_id].time_when_cal = now_time
-                    vehicle_threads[vehicle_id].control_signal_new = []
+                    Global_Vars.vehicle_threads[vehicle_id].time_when_cal = now_time
+                    Global_Vars.vehicle_threads[vehicle_id].control_signal_new = []
                     num_CAV +=1
                     type_list.append('CAV')
                     state = [traci.vehicle.getLanePosition(vehicle_id), traci.vehicle.getSpeed(vehicle_id)]
@@ -74,22 +78,33 @@ class JunctionController(threading.Thread):
                 initial_state_HDV = np.array(initial_state_HDV)
 
                 #mpc_control(initial_state, 0, weights=[1.0,0.5], N=20, dt=dt, bounds=(MIN_ACCEL,MAX_ACCEL,0,MAX_SPEED),type_info=type_info,now_lane = lane_id,lane_towards = lane_towards,last_quarter_vehicles=last_quarter_vehicles)
-                solve_status,u = QP_solver(initial_state_CAV, initial_state_HDV, vehicles_list_this_lane, N, dt, v_max=MAX_SPEED, v_min=MIN_SPEED, a_max=MAX_ACCEL,a_min=MIN_ACCEL, L_safe=L_safe, lane_now=lane_id, CAV_id_list=CAV_id_list, HDV_id_list=HDV_id_list)
+                solve_status,u = QP_solver(initial_state_CAV, initial_state_HDV, vehicles_list_this_lane, Global_Vars.N, Global_Vars.dt, v_max=Global_Vars.MAX_SPEED, v_min=Global_Vars.MIN_SPEED, a_max=Global_Vars.MAX_ACCEL,a_min=Global_Vars.MIN_ACCEL, L_safe=Global_Vars.L_safe, lane_now=lane_id, CAV_id_list=CAV_id_list, HDV_id_list=HDV_id_list)
 
                 if solve_status:
                     i = 0 
                     for vehicle in CAV_id_list:
-                        vehicle_threads[vehicle].control_signal_new = u[i::num_CAV-1]
+                        Global_Vars.vehicle_threads[vehicle].control_signal_new = u[i::num_CAV]
                         i += 1
                 print('3')
         end_time = time.time()
         elapsed_time = end_time - start_time
-        print(f"{self.junction_id}  计算耗时: {elapsed_time:.4f} 秒")
+
+        with open(self.log_file,"a") as f:
+            print(f"{self.junction_id}  计算耗时: {elapsed_time:.4f} 秒")
 
     def run(self):
-        global step
+
+        self.open_terminal_with_logs()
+
         while self.running and traci.simulation.getMinExpectedNumber() > 0:
-            if step % 2 == 0:
+            if Global_Vars.step % 2 == 0:
                 self.get_last_quarter_every_lane()
                 self.update_cav_speeds()
 
+    def open_terminal_with_logs(self):
+        """为每个路口打开一个独立的终端窗口，并实时显示日志"""
+        if platform.system() == "Windows":
+            command = f"start cmd /k type {self.log_file}"
+        else:
+            command = f"gnome-terminal -- bash -c 'tail -f {self.log_file}'"
+        subprocess.run(command, shell=True)
