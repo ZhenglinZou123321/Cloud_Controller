@@ -2,7 +2,7 @@ import threading
 import traci
 import copy
 from utils.Solver_utils import *
-
+import Global_Vars
 
 
 
@@ -19,11 +19,11 @@ def idm_acceleration(current_speed, front_vehicle_speed, gap,  front_vehicle_id=
     返回:
     float: 根据IDM模型计算出的当前车辆加速度 (m/s²)
     """
-    global s_0,T,a_max,b,V_0,delta,MIN_ACCEL,MAX_ACCEL
+    
     relative_speed = current_speed - front_vehicle_speed
-    s_star = s_0 + current_speed * T + (current_speed * relative_speed) / (2 * np.sqrt(a_max * b))
-    acceleration = a_max * (1 - (current_speed / V_0) ** delta - (s_star / gap) ** 2)
-    return min(max(acceleration,MIN_ACCEL),MAX_ACCEL)
+    s_star = Global_Vars.s_0 + current_speed * Global_Vars.T + (current_speed * relative_speed) / (2 * np.sqrt(Global_Vars.a_max * Global_Vars.b))
+    acceleration = Global_Vars.a_max * (1 - (current_speed / Global_Vars.V_0) ** Global_Vars.delta - (s_star / gap) ** 2)
+    return min(max(acceleration,Global_Vars.MIN_ACCEL),Global_Vars.MAX_ACCEL)
 
 
 
@@ -61,10 +61,7 @@ class VehicleController(threading.Thread):
             return None
 
     def run(self):
-        global step
-        global previous_vehicle_edges
-        global net
-        global junction_counts
+
         while self.running and traci.simulation.getMinExpectedNumber() > 0 and self.vehicle_id[0:3] == "CAV":
             print(f"{self.vehicle_id[0:3]} thread running")
 
@@ -74,18 +71,18 @@ class VehicleController(threading.Thread):
             # 如果车辆在网络的有效 edge 上
             if current_edge and current_edge[0] != ":":
                 # 获取车辆的上一个 edge
-                previous_edge = previous_vehicle_edges.get(self.vehicle_id)
+                previous_edge = Global_Vars.previous_vehicle_edges.get(self.vehicle_id)
                 # 检查车辆是否从一个 edge 转移到另一个 edge
                 if previous_edge and previous_edge != current_edge:
                     # 获取 previous_edge 的终点 junction
-                    to_junction = net.getEdge(previous_edge).getToNode().getID()
+                    to_junction = Global_Vars.net.getEdge(previous_edge).getToNode().getID()
                     # 在 junction_counts 中递增计数
-                    if to_junction in junction_counts:
-                        junction_counts[to_junction] += 1
+                    if to_junction in Global_Vars.junction_counts:
+                        Global_Vars.junction_counts[to_junction] += 1
                     else:
-                        junction_counts[to_junction] = 1
+                        Global_Vars.junction_counts[to_junction] = 1
                 # 更新车辆的上一个 edge 为当前 edge
-                previous_vehicle_edges[self.vehicle_id] = current_edge
+                Global_Vars.previous_vehicle_edges[self.vehicle_id] = current_edge
 
             try:
                 # 检查车辆是否仍然在仿真中
@@ -93,7 +90,7 @@ class VehicleController(threading.Thread):
                     # 尝试获取车辆位置
                     position = traci.vehicle.getPosition(self.vehicle_id)
                 except traci.exceptions.TraCIException:
-                    print(f"在第 {step} 步，车辆 {self.vehicle_id} 不在场景中。")
+                    print(f"在第 {Global_Vars.step} 步，车辆 {self.vehicle_id} 不在场景中。")
                     self.running = False
                     continue
 
@@ -124,7 +121,7 @@ class VehicleController(threading.Thread):
                     self.control_signal = list(self.control_signal_new)
                     if len(self.control_signal) != 0:
                         traci.vehicle.setSpeedMode(self.vehicle_id, 00000)  # 关闭跟驰模型
-                        self.mpc_acc = self.get_control_signal(step, self.dt)
+                        self.mpc_acc = self.get_control_signal(Global_Vars.step, self.dt)
 
                         # 如果有idm控制量
                         if self.idm_acc != None:
