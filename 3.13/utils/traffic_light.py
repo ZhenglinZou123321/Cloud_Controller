@@ -113,7 +113,7 @@ def get_lane_state(lane_id,lane_dict,lane_m):
     return traffic_signal_dict[lane_phase],remain_time
 
 
-def get_state(intersection_id,Intersection_Edge_Dict,lane_index_dict,lane_adj,nowphase_index):
+def get_state(intersection_id,lane_index_dict,lane_adj,nowphase_index):
     reversed_lane_dict = {str(v): k for k, v in lane_index_dict.items()}
     next_state_of_last = []
     new_state = []
@@ -345,7 +345,7 @@ class TrafficLightController(threading.Thread):
 
         while self.running and traci.simulation.getMinExpectedNumber() > 0:
             if traci.trafficlight.getPhase(self.Traffic_Signal_id) in [1,3,5,7] and get_remaining_phase_time(self.Traffic_Signal_id)<Least_Check_Time and self.agent.CheckOrNot is False:
-                next_state,new_state = get_state(self.Traffic_Signal_id,self.Intersection_Edge_Dict,self.lane_index_dict,self.lane_adj_matrix,traci.trafficlight.getPhase(self.Traffic_Signal_id))
+                next_state,new_state = get_state(self.Traffic_Signal_id,self.lane_index_dict,self.lane_adj_matrix,traci.trafficlight.getPhase(self.Traffic_Signal_id))
                 reward = get_reward(self.Traffic_Signal_id,self.agent,Action_list,Global_Vars.junction_counts)
                 self.agent.memory.append((self.agent.state, self.agent.action, reward, next_state))
                 self.agent.step += 1

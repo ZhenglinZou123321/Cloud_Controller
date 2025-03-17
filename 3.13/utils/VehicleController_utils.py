@@ -30,6 +30,7 @@ def idm_acceleration(current_speed, front_vehicle_speed, gap,  front_vehicle_id=
 
 def get_remaining_phase_and_time(lane_id): #获取信号灯当前相位和剩余时间
     # 按照固定字符进行分割
+    print(f"检查 {lane_id}")
     x, rest = lane_id.split("t", 1)  # 分割出 X 和剩余部分
     intersection_id, z = rest.split("_", 1)  # 分割出 Y 和 Z
     # 获取当前仿真时间

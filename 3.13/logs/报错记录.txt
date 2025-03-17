@@ -1,0 +1,27 @@
+检查 :j10_36_1
+Traceback (most recent call last):
+  File "/Projects/Cloud_Controller/3.13/utils/VehicleController_utils.py", line 115, in run
+    self.phase,self.remaining_time = get_remaining_phase_and_time(self.lane_now)
+  File "/Projects/Cloud_Controller/3.13/utils/VehicleController_utils.py", line 34, in get_remaining_phase_and_time
+    x, rest = lane_id.split("t", 1)  # 分割出 X 和剩余部分
+ValueError: not enough values to unpack (expected 2, got 1)
+
+解决：
+这应该是在交通路口内这种情况下，不需要去寻找剩余时长，因为已经进路口了
+
+
+
+
+j7  计算耗时: 0.0930 秒
+CAV_18的前车是CAV_9
+CAV thread running
+2
+Exception in thread Thread-9:
+Traceback (most recent call last):
+  File "/root/anaconda3/envs/mulint/lib/python3.9/threading.py", line 980, in _bootstrap_inner
+    self.run()
+  File "/Projects/Cloud_Controller/3.13/utils/traffic_light.py", line 349, in run
+    reward = get_reward(self.Traffic_Signal_id,self.agent,Action_list,Global_Vars.junction_counts)
+  File "/Projects/Cloud_Controller/3.13/utils/traffic_light.py", line 227, in get_reward
+    passed_count = junction_counts[intersection_id] - agent.passed_count
+KeyError: 'j7'
