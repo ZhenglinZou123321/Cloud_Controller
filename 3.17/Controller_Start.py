@@ -9,8 +9,9 @@ import csv
 from utils.VehicleController_utils import *
 from utils.Solver_utils import *
 from utils.junction_utils import *
-from utils.traffic_light import TrafficLightController
+from utils.traffic_light import *
 import Global_Vars
+
 
 '''
 dt = 0.2
@@ -56,34 +57,44 @@ with open('traffic_data_gaussian.csv', mode='w', newline='') as file:
     writer.writerow(['time', 'road_id', 'vehicle_count', 'average_speed'])
 
 
-
-
+#redis 数据库
+#r = redis.Redis(host='localhost', port=6379, db=0, password='123456', decode_responses=True)  
 
 
 
 if __name__ == '__main__':
 
-    # 路口线程创建
+    # 路口、信号灯线程创建 路口数据库构建
     #******************************
     for junc in Global_Vars.Intelligent_Sigal_List:
         controller = JunctionController(junc,Global_Vars.traffic_light_to_lanes,Global_Vars.N,Global_Vars.dt,Global_Vars.L_safe)
         controller.start()
+        juncclass = Global_Vars.Junc(junc)
+        Global_Vars.JuncLib[junc] = juncclass
 
-    # 信号灯线程创建
+    # 信号灯线程创建 信号灯数据库构建
     #******************************
     for junc in Global_Vars.Intelligent_Sigal_List:
         controller = TrafficLightController(junc,Global_Vars.traffic_light_to_lanes,Global_Vars.lane_index_dict,Global_Vars.lane_adj_matrix,Global_Vars.N,Global_Vars.dt,Global_Vars.L_safe)
         controller.start()
+        lightclass = Global_Vars.Light(junc)
+        Global_Vars.LightLib[junc] = lightclass
+
         
     # 开始仿真
     print("ready to start")
 
     while traci.simulation.getMinExpectedNumber() > 0:
         traci.simulationStep()
+        
+        # 数据读取过程
 
-        # 车辆线程创建与关闭
+        # 车辆线程创建与关闭  车辆数据读取
         vehicle_ids = traci.vehicle.getIDList()
         for vehicle_id in vehicle_ids:
+            if vehicle_id not in Global_Vars.VehicleLib:
+                vehicleclass = Global_Vars.Vehicle(vehicle_id,vehicle_id[0:3])
+                Global_Vars.VehicleLib[vehicle_id] = vehicleclass
             if vehicle_id not in Global_Vars.vehicle_threads:
                 # 如果发现新CAV，启动一个控制线程
                 # 线程的关闭和清除，放在线程类里
@@ -94,6 +105,17 @@ if __name__ == '__main__':
                     Global_Vars.vehicle_threads[vehicle_id] = controller
                     print(f"Started thread for vehicle {vehicle_id}")
                     continue
+            Global_Vars.VehicleLib[vehicle_id].update(traci.vehicle.getAccel(vehicle_id),
+                                                      traci.vehicle.getPosition(vehicle_id),
+                                                      traci.vehicle.getLaneID(vehicle_id),
+                                                      traci.vehicle.getLeader(vehicle_id))
+        for junc in Global_Vars.Intelligent_Sigal_List:
+            Global_Vars.JuncLib[junc].update()  
+            Global_Vars.LightLib[junc].update()      
+
+
+
+
 
         # Step 仿真步的记录
         Global_Vars.step += 1

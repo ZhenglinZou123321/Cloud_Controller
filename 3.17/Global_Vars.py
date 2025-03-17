@@ -2,6 +2,7 @@ import os
 import sumolib
 import json
 import pandas as pd
+import traci
 
 
 
@@ -83,3 +84,51 @@ for key in traffic_light_to_lanes.keys():
 
 # 所要管控的路口id
 Intelligent_Sigal_List = ['j5', 'j6', 'j7', 'j10','j11','j12']
+
+
+# 数据存储结构
+VehicleLib = {}
+class Vehicle():
+    def __init__(self,id,type):
+        self.id = id #
+        self.type = type # 'CAV' 'HDV'
+        self.v = 0
+        self.pos = (0.0,0.0)
+        self.lane = '' 
+
+    def update(self,v,pos,lane,leader):
+        self.v = v
+        self.pos = pos
+        self.lane = lane
+        self.leader = leader # getleader 的返回值 (leader_id,gap)
+
+JuncLib = {}
+class Junc():
+    def __init__(self,id):
+        self.id = id #
+        self.vehicle_num = {}
+        self.lane_ids = self.traffic_light_to_lanes[self.id]
+        self.vehicle_num = {laneID:0 for laneID in self.lane_ids}
+
+
+    def update(self):
+        self.vehicle_num = {laneID:traci.lane.getLastStepVehicleNumber(laneID) for laneID in self.lane_ids}
+
+
+LightLib = {}
+class Light():
+    def __init__(self,id):
+        self.id = id #
+        self.phase = '' #'r' 'g' 'y'
+        self.remaining_time = 0
+        self.nextphase = ''
+    def update(self,phase,remaining_time):
+        self.phase = phase
+        self.remaining_time = remaining_time
+        if self.phase == 'r':
+            self.nextphase = 'g'
+        elif self.phase == 'g':
+            self.nextphase = 'y'
+        else:
+            self.nextphase = 'r'
+    
