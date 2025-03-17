@@ -106,5 +106,5 @@ class JunctionController(threading.Thread):
         if platform.system() == "Windows":
             command = f"start cmd /k type {self.log_file}"
         else:
-            command = f"gnome-terminal -- bash -c 'tail -f {self.log_file}'"
-        subprocess.run(command, shell=True)
+            command = f"xterm -e 'tail -f {self.log_file}'"
+            subprocess.run(command, shell=True)
