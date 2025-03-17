@@ -76,3 +76,6 @@ junction_threads = {}
 # 交通流量计数字典
 previous_vehicle_edges = {}
 junction_counts = {}
+
+for key in traffic_light_to_lanes.keys():
+    junction_counts[key] = 0

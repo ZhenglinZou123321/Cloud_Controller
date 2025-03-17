@@ -4,6 +4,7 @@ import copy
 from utils.Solver_utils import *
 import Global_Vars
 import traceback
+import re
 
 
 
@@ -28,9 +29,15 @@ def idm_acceleration(current_speed, front_vehicle_speed, gap,  front_vehicle_id=
 
 
 
+def lane_is_out_junction(s):
+    pattern = r'^j.*tj.*$'
+    if re.match(pattern, s):
+        return True
+    return False
+
+
 def get_remaining_phase_and_time(lane_id): #获取信号灯当前相位和剩余时间
     # 按照固定字符进行分割
-    print(f"检查 {lane_id}")
     x, rest = lane_id.split("t", 1)  # 分割出 X 和剩余部分
     intersection_id, z = rest.split("_", 1)  # 分割出 Y 和 Z
     # 获取当前仿真时间
@@ -64,8 +71,8 @@ class VehicleController(threading.Thread):
 
     def run(self):
 
-        while self.running and traci.simulation.getMinExpectedNumber() > 0 and self.vehicle_id[0:3] == "CAV":
-            print(f"{self.vehicle_id[0:3]} thread running")
+        while self.running:
+            #print(f"{self.vehicle_id[0:3]} thread running")
 
             # 车流量计数
             # 获取车辆当前所在的 edge
@@ -112,12 +119,17 @@ class VehicleController(threading.Thread):
                 else:
                     # 无前车的情况下，或者前车与本车不在一个车道时
                     self.lane_now = traci.vehicle.getLaneID(self.vehicle_id)
-                    self.phase,self.remaining_time = get_remaining_phase_and_time(self.lane_now)
-                    if self.phase == 'r' or self.phase == 'y':
-                        self.lane_length = traci.lane.getLength(self.lane_now)
-                        self.idm_acc = idm_acceleration(self.speed, 0.0,
-                                                    self.lane_length-traci.vehicle.getLanePosition(self.vehicle_id),
-                                                    front_vehicle_id=None)
+                    # 如果车辆目前在路口外
+                    if lane_is_out_junction(self.lane_now):
+                        self.phase,self.remaining_time = get_remaining_phase_and_time(self.lane_now)
+                        if self.phase == 'r' or self.phase == 'y':
+                            self.lane_length = traci.lane.getLength(self.lane_now)
+                            self.idm_acc = idm_acceleration(self.speed, 0.0,
+                                                        self.lane_length-traci.vehicle.getLanePosition(self.vehicle_id),
+                                                        front_vehicle_id=None)
+                    # 如果车辆目前在路口内
+                    #********************************************
+
                         
                 # 速度施加环节
                 if self.vehicle_id[0:3] == "CAV":

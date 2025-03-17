@@ -93,8 +93,6 @@ class JunctionController(threading.Thread):
             print(f"{self.junction_id}  计算耗时: {elapsed_time:.4f} 秒")
 
     def run(self):
-
-
         while self.running and traci.simulation.getMinExpectedNumber() > 0:
             if Global_Vars.step % 2 == 0:
                 self.get_last_quarter_every_lane()
