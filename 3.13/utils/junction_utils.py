@@ -22,7 +22,7 @@ class JunctionController(threading.Thread):
         self.N = N
         self.dt = dt
         self.L_safe = L_safe
-        self.log_file = f"junction_{self.junction_id}.log"
+        self.log_file = f"logs/junction_{self.junction_id}.log"
 
     def get_last_quarter_every_lane(self):
         lane_ids = self.traffic_light_to_lanes[self.junction_id]
@@ -94,17 +94,9 @@ class JunctionController(threading.Thread):
 
     def run(self):
 
-        self.open_terminal_with_logs()
 
         while self.running and traci.simulation.getMinExpectedNumber() > 0:
             if Global_Vars.step % 2 == 0:
                 self.get_last_quarter_every_lane()
                 self.update_cav_speeds()
 
-    def open_terminal_with_logs(self):
-        """为每个路口打开一个独立的终端窗口，并实时显示日志"""
-        if platform.system() == "Windows":
-            command = f"start cmd /k type {self.log_file}"
-        else:
-            command = f"xterm -e 'tail -f {self.log_file}'"
-            subprocess.run(command, shell=True)

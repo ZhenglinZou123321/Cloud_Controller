@@ -3,6 +3,7 @@ import traci
 import copy
 from utils.Solver_utils import *
 import Global_Vars
+import traceback
 
 
 
@@ -90,6 +91,7 @@ class VehicleController(threading.Thread):
                     # 尝试获取车辆位置
                     position = traci.vehicle.getPosition(self.vehicle_id)
                 except traci.exceptions.TraCIException:
+                    traceback.print_exc()
                     print(f"在第 {Global_Vars.step} 步，车辆 {self.vehicle_id} 不在场景中。")
                     self.running = False
                     continue
@@ -152,6 +154,7 @@ class VehicleController(threading.Thread):
                             traci.vehicle.setAcceleration(self.vehicle_id, 0.0, 1)
                         print(f"{self.vehicle_id}已施加加速度控制量：{self.acc_control}")
             except:
+                traceback.print_exc()
                 print(f"{self.vehicle_id} 施加加速度控制量失败")         
 
 
