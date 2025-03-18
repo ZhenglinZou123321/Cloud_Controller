@@ -5,8 +5,7 @@ import copy
 import numpy as np
 from utils.Solver_utils import *
 import Global_Vars
-import subprocess
-import platform
+
 
 class JunctionController(threading.Thread):
     def __init__(self, junction_id_,traffic_light_to_lanes_,N,dt,L_safe):
@@ -93,7 +92,7 @@ class JunctionController(threading.Thread):
             print(f"{self.junction_id}  计算耗时: {elapsed_time:.4f} 秒")
 
     def run(self):
-        while self.running and traci.simulation.getMinExpectedNumber() > 0:
+        while self.running:
             if Global_Vars.step % 2 == 0:
                 self.get_last_quarter_every_lane()
                 self.update_cav_speeds()

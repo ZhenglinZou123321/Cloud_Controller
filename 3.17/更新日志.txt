@@ -34,3 +34,4 @@ tcp通信争抢的情况了。
 traffic_light中的
 def get_lane_state(lane_id,lane_dict,lane_m):
 有很大的问题，写的很冗余，貌似没必要搞这么复杂。他只是想得到lane当前的phase和剩余时长
+只不过他的phase是0，1，2来表示的
