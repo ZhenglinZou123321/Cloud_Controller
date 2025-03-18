@@ -27,6 +27,9 @@ Least_Check_Time = 3
 train_gap = 20
 train_batchsize = 32
 
+reversed_lane_dict = {str(v): k for k, v in Global_Vars.lane_index_dict.items()}
+
+
 def get_remaining_phase_and_time(lane_id): #获取信号灯当前相位和剩余时间
     # 按照固定字符进行分割
     x, rest = lane_id.split("t", 1)  # 分割出 X 和剩余部分
@@ -114,7 +117,6 @@ def get_lane_state(lane_id,lane_dict,lane_m):
 
 
 def get_state(intersection_id,lane_index_dict,lane_adj,nowphase_index):
-    reversed_lane_dict = {str(v): k for k, v in lane_index_dict.items()}
     next_state_of_last = []
     new_state = []
     traffic_signal_dict = {'r':0,'g':1,'y':2}

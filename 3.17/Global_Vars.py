@@ -3,6 +3,8 @@ import sumolib
 import json
 import pandas as pd
 import traci
+from utils.VehicleController_utils import *
+from utils.traffic_light import *
 
 
 
@@ -87,6 +89,11 @@ Intelligent_Sigal_List = ['j5', 'j6', 'j7', 'j10','j11','j12']
 
 
 # 数据存储结构
+for junc in traffic_light_to_lanes.keys():
+    Lanes_length = {laneID:traci.lane.getLength(laneID) for laneID in traffic_light_to_lanes[junc]}
+
+
+
 VehicleLib = {}
 class Vehicle():
     def __init__(self,id,type):
@@ -95,20 +102,23 @@ class Vehicle():
         self.v = 0
         self.pos = (0.0,0.0)
         self.lane = '' 
+        self.vehicle_length = traci.vehicle.getLength(self.id)
 
     def update(self,v,pos,lane,leader):
         self.v = v
         self.pos = pos
         self.lane = lane
         self.leader = leader # getleader 的返回值 (leader_id,gap)
+        self.laneposition = traci.vehicle.getLanePosition(self.id)
 
 JuncLib = {}
 class Junc():
     def __init__(self,id):
         self.id = id #
         self.vehicle_num = {}
-        self.lane_ids = self.traffic_light_to_lanes[self.id]
+        self.lane_ids = traffic_light_to_lanes[self.id]
         self.vehicle_num = {laneID:0 for laneID in self.lane_ids}
+        self.lanes_length = {laneID:traci.lane.getLength(laneID) for laneID in self.lane_ids}
 
 
     def update(self):
@@ -118,17 +128,35 @@ class Junc():
 LightLib = {}
 class Light():
     def __init__(self,id):
+        self.lane_ids = traffic_light_to_lanes[self.id]
         self.id = id #
-        self.phase = '' #'r' 'g' 'y'
-        self.remaining_time = 0
-        self.nextphase = ''
-    def update(self,phase,remaining_time):
-        self.phase = phase
-        self.remaining_time = remaining_time
-        if self.phase == 'r':
-            self.nextphase = 'g'
-        elif self.phase == 'g':
-            self.nextphase = 'y'
-        else:
-            self.nextphase = 'r'
+        self.phase = {k:'' for k in self.lane_ids} #'r' 'g' 'y'
+        self.remaining_time = {k:0 for k in self.lane_ids}
+        self.nextphase = {k:'' for k in self.lane_ids}
+        self.lane_type_incoming = {k:is_incoming_lane(k) for k in self.lane_ids}
+        self.completeRedYellowGreenDefinition = traci.trafficlight.getCompleteRedYellowGreenDefinition(self.id)
+        self.controlled_lanes = traci.trafficlight.getControlledLanes(self.id)
+
+    def update(self):
+        for laneID in self.lane_ids:
+            self.phase[laneID],self.remaining_time[laneID] = get_remaining_phase_and_time(laneID)
+            if self.phase[laneID] == 'r':
+                self.nextphase[laneID] = 'g'
+            elif self.phase[laneID] == 'g':
+                self.nextphase[laneID] = 'y'
+            else:
+                self.nextphase[laneID] = 'r'
+
+        nowphase_index = traci.trafficlight.getPhase(self.id)
+        self.next_phase_state = self.completeRedYellowGreenDefinition(self.id)[0].phases[(nowphase_index + 1) % 8].state
+        self.next_3_phase_state = self.completeRedYellowGreenDefinition(self.id)[0].phases[(nowphase_index + 3) % 8].state
+
+
+
+class Sim_info():
+    def __init__(self):
+        self.current_time = 0
+    
+    def update(self):
+        self.current_time = traci.simulation.getCurrentTime()
     
