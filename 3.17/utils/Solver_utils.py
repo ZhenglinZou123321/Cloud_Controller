@@ -15,23 +15,13 @@ import cvxpy as cp
 import os
 import sys
 import pandas as pd
+import Global_Vars
 
 
 
 
 
-def get_remaining_phase_and_time(lane_id): #获取信号灯当前相位和剩余时间
-    # 按照固定字符进行分割
-    x, rest = lane_id.split("t", 1)  # 分割出 X 和剩余部分
-    intersection_id, z = rest.split("_", 1)  # 分割出 Y 和 Z
-    # 获取当前仿真时间
-    current_time = traci.simulation.getTime()
-    # 获取下一个信号切换的时间
-    next_switch_time = traci.trafficlight.getNextSwitch(intersection_id)
-    # 计算剩余时间 秒
-    remaining_time = next_switch_time - current_time
-    current_phase = traci.trafficlight.getRedYellowGreenState(intersection_id)[traci.trafficlight.getControlledLanes(intersection_id).index(lane_id)]
-    return current_phase.lower(),max(remaining_time, 0)  # 防止负值
+
 
 
 
@@ -84,7 +74,7 @@ def construct_CAV_block_matrix(num_CAV, m):
 
     return result
 
-def QP_solver(initial_state_CAV,initial_state_HDV,vehicles_list_this_lane,N,dt,v_max,v_min,a_max,a_min,L_safe,lane_now,CAV_id_list,HDV_id_list):
+def QP_solver(initial_state_CAV,initial_state_HDV,vehicles_list_this_lane,N,dt,v_max,v_min,a_max,a_min,L_safe,lane_now,CAV_id_list,HDV_id_list,intersection_id):
     v_best = 13
     CAV_id_list.reverse()
     HDV_id_list.reverse()
@@ -146,7 +136,10 @@ def QP_solver(initial_state_CAV,initial_state_HDV,vehicles_list_this_lane,N,dt,v
     #避碰
     HDVcons_left = np.array([1,0])
     CAVcons_left = np.array([1,0])
-    phase,remaining_time = get_remaining_phase_and_time(lane_now)
+
+    phase = Global_Vars.LightLib[intersection_id].phase[lane_now]#get_lane_state(one_lane, lane_index_dict, lane_adj)
+    remaining_time = Global_Vars.LightLib[intersection_id].remaining_time[lane_now]
+
 
     #生成红绿灯约束矩阵
     big_M = 999

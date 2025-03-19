@@ -30,18 +30,7 @@ train_batchsize = 32
 reversed_lane_dict = {str(v): k for k, v in Global_Vars.lane_index_dict.items()}
 
 
-def get_remaining_phase_and_time(lane_id): #获取信号灯当前相位和剩余时间
-    # 按照固定字符进行分割
-    x, rest = lane_id.split("t", 1)  # 分割出 X 和剩余部分
-    intersection_id, z = rest.split("_", 1)  # 分割出 Y 和 Z
-    # 获取当前仿真时间
-    current_time = traci.simulation.getTime()
-    # 获取下一个信号切换的时间
-    next_switch_time = traci.trafficlight.getNextSwitch(intersection_id)
-    # 计算剩余时间 秒
-    remaining_time = next_switch_time - current_time
-    current_phase = traci.trafficlight.getRedYellowGreenState(intersection_id)[traci.trafficlight.getControlledLanes(intersection_id).index(lane_id)]
-    return current_phase.lower(),max(remaining_time, 0)  # 防止负值
+
 
 
 # 合并所有智能体的 memory
@@ -97,6 +86,9 @@ def get_remaining_phase_time(traffic_light_id): #获取信号灯剩余时间
     remaining_time = next_switch_time - current_time
     return max(remaining_time, 0)  # 防止负值
 
+
+traffic_signal_dict = {'r':0,'g':1,'y':2}
+'''
 def get_lane_state(lane_id,lane_dict,lane_m):
 
     traffic_signal_dict = {'r':0,'g':1,'y':2}
@@ -113,10 +105,10 @@ def get_lane_state(lane_id,lane_dict,lane_m):
         lane_phase = 'g'
         remain_time = 99
 
-    return traffic_signal_dict[lane_phase],remain_time
+    return traffic_signal_dict[lane_phase],remain_time'''
 
 
-def get_state(intersection_id,lane_index_dict,lane_adj,nowphase_index):
+def get_state(intersection_id,lane_index_dict,lane_adj):
     next_state_of_last = []
     new_state = []
     traffic_signal_dict = {'r':0,'g':1,'y':2}
@@ -126,11 +118,14 @@ def get_state(intersection_id,lane_index_dict,lane_adj,nowphase_index):
     dentisy_to = 0#目标车道的车辆密度
     next_green_density_last = []
     next_green_density_new = []
-    current_phase_state = traci.trafficlight.getRedYellowGreenState(intersection_id)
-    next_phase_state = traci.trafficlight.getCompleteRedYellowGreenDefinition(intersection_id)[0].phases[(nowphase_index + 1) % 8].state
-    next_3_phase_state = traci.trafficlight.getCompleteRedYellowGreenDefinition(intersection_id)[0].phases[(nowphase_index + 3) % 8].state
+    current_phase_state = Global_Vars.LightLib[intersection_id].current_phase_state
+    #current_phase_state = traci.trafficlight.getRedYellowGreenState(intersection_id)
+    next_phase_state = Global_Vars.LightLib[intersection_id].next_phase_state
+    next_3_phase_state = Global_Vars.LightLib[intersection_id].next_3_phase_state
+    #next_phase_state = traci.trafficlight.getCompleteRedYellowGreenDefinition(intersection_id)[0].phases[(nowphase_index + 1) % 8].state
+    #next_3_phase_state = traci.trafficlight.getCompleteRedYellowGreenDefinition(intersection_id)[0].phases[(nowphase_index + 3) % 8].state
     #for edge in Intersection_Edge_Dict[intersection_id]['in']:
-    for (index,lane) in enumerate(traci.trafficlight.getControlledLanes(intersection_id)):
+    for (index,lane) in enumerate(Global_Vars.LightLib[intersection_id].controlled_lanes):
         if lane  in checked_lane:
             continue
         checked_lane.append(lane)
@@ -141,9 +136,9 @@ def get_state(intersection_id,lane_index_dict,lane_adj,nowphase_index):
         next_signal_state = traffic_signal_dict[next_phase_state[index].lower()]
         next_3_signal_state = traffic_signal_dict[next_3_phase_state[index].lower()]
         if now_signal_state == 2:
-            vehicle_ids = traci.lane.getLastStepVehicleIDs(lane)
-            vehicle_occupancy_length = sum(traci.vehicle.getLength(vehicle_id) for vehicle_id in vehicle_ids)
-            dentisy_self = vehicle_occupancy_length/traci.lane.getLength(lane) #self占用率
+            vehicle_ids = Global_Vars.JuncLib[intersection_id].vehicle_ids[lane]
+            vehicle_occupancy_length = sum(Global_Vars.VehicleLib[vehicle_id].length for vehicle_id in vehicle_ids)
+            dentisy_self = vehicle_occupancy_length/Global_Vars.Lanes_length[lane] #self占用率
             #links = traci.lane.getLinks(lane)
             lane_index = lane_index_dict[lane]
             to_list = np.nonzero(lane_adj[lane_index])[0] #这个lane要去的lane的索引
@@ -153,10 +148,11 @@ def get_state(intersection_id,lane_index_dict,lane_adj,nowphase_index):
                 if match_strings(reversed_lane_dict[str(one_lane)][:-2],lane[:-2]):
                     continue
                 one_lane = reversed_lane_dict[str(one_lane)]
-                vehicle_ids = traci.lane.getLastStepVehicleIDs(one_lane)
-                vehicle_occupancy_length = sum(traci.vehicle.getLength(vehicle_id) for vehicle_id in vehicle_ids)
-                dentisy_to = vehicle_occupancy_length/traci.lane.getLength(one_lane)
-                signal_index,remain_time = get_lane_state(one_lane, lane_index_dict, lane_adj)
+                vehicle_ids = Global_Vars.JuncLib[intersection_id].vehicle_ids[one_lane]
+                vehicle_occupancy_length = sum(Global_Vars.VehicleLib[vehicle_id].length for vehicle_id in vehicle_ids)
+                dentisy_to = vehicle_occupancy_length/Global_Vars.Lanes_length[one_lane]
+                signal_index = traffic_signal_dict[Global_Vars.LightLib[intersection_id].phase[one_lane]]#get_lane_state(one_lane, lane_index_dict, lane_adj)
+                remain_time = Global_Vars.LightLib[intersection_id].remaining_time[one_lane]
                 next_state_of_last.extend([dentisy_to,signal_index,remain_time])
 
             from_temp = []
@@ -164,18 +160,19 @@ def get_state(intersection_id,lane_index_dict,lane_adj,nowphase_index):
                 if match_strings(reversed_lane_dict[str(one_lane)][:-2],lane[:-2]):
                     continue
                 one_lane = reversed_lane_dict[str(one_lane)]
-                vehicle_ids = traci.lane.getLastStepVehicleIDs(one_lane)
-                vehicle_occupancy_length = sum(traci.vehicle.getLength(vehicle_id) for vehicle_id in vehicle_ids)
-                dentisy_from = vehicle_occupancy_length/traci.lane.getLength(one_lane)
-                signal_index,remain_time = get_lane_state(one_lane, lane_index_dict, lane_adj)
-                from_temp.extend([dentisy_to, signal_index, remain_time])
+                vehicle_ids = Global_Vars.JuncLib[intersection_id].vehicle_ids[one_lane]
+                vehicle_occupancy_length = sum(Global_Vars.VehicleLib[vehicle_id].length for vehicle_id in vehicle_ids)
+                dentisy_from = vehicle_occupancy_length/Global_Vars.Lanes_length[one_lane]
+                signal_index = traffic_signal_dict[Global_Vars.LightLib[intersection_id].phase[one_lane]]#get_lane_state(one_lane, lane_index_dict, lane_adj)
+                remain_time = Global_Vars.LightLib[intersection_id].remaining_time[one_lane]
+                from_temp.extend([dentisy_from, signal_index, remain_time])
             from_temp += [0] * (3 * 3 - len(from_temp))
             next_state_of_last.extend(from_temp)
 
         elif now_signal_state == 0 and next_signal_state == 1:
-            vehicle_ids = traci.lane.getLastStepVehicleIDs(lane)
-            vehicle_occupancy_length = sum(traci.vehicle.getLength(vehicle_id) for vehicle_id in vehicle_ids)
-            dentisy_self = vehicle_occupancy_length/traci.lane.getLength(lane) #self占用率
+            vehicle_ids = Global_Vars.JuncLib[intersection_id].vehicle_ids[lane]
+            vehicle_occupancy_length = sum(Global_Vars.VehicleLib[vehicle_id].length for vehicle_id in vehicle_ids)
+            dentisy_self = vehicle_occupancy_length/Global_Vars.Lanes_length[one_lane] #self占用率
             #links = traci.lane.getLinks(lane)
             lane_index = lane_index_dict[lane]
             to_list = np.nonzero(lane_adj[lane_index])[0] #这个lane要去的lane的索引
@@ -186,10 +183,11 @@ def get_state(intersection_id,lane_index_dict,lane_adj,nowphase_index):
                 if match_strings(reversed_lane_dict[str(one_lane)][:-2],lane[:-2]):
                     continue
                 one_lane = reversed_lane_dict[str(one_lane)]
-                vehicle_ids = traci.lane.getLastStepVehicleIDs(one_lane)
-                vehicle_occupancy_length = sum(traci.vehicle.getLength(vehicle_id) for vehicle_id in vehicle_ids)
-                dentisy_to = vehicle_occupancy_length/traci.lane.getLength(one_lane)
-                signal_index,remain_time = get_lane_state(one_lane, lane_index_dict, lane_adj)
+                vehicle_ids = Global_Vars.JuncLib[intersection_id].vehicle_ids[one_lane]
+                vehicle_occupancy_length = sum(Global_Vars.VehicleLib[vehicle_id].length for vehicle_id in vehicle_ids)
+                dentisy_to = vehicle_occupancy_length/Global_Vars.Lanes_length[one_lane]
+                signal_index = traffic_signal_dict[Global_Vars.LightLib[intersection_id].phase[one_lane]]#get_lane_state(one_lane, lane_index_dict, lane_adj)
+                remain_time = Global_Vars.LightLib[intersection_id].remaining_time[one_lane]
                 new_state.extend([dentisy_to,signal_index,remain_time])
 
             from_temp = []
@@ -197,19 +195,20 @@ def get_state(intersection_id,lane_index_dict,lane_adj,nowphase_index):
                 if match_strings(reversed_lane_dict[str(one_lane)][:-2],lane[:-2]):
                     continue
                 one_lane = reversed_lane_dict[str(one_lane)]
-                vehicle_ids = traci.lane.getLastStepVehicleIDs(one_lane)
-                vehicle_occupancy_length = sum(traci.vehicle.getLength(vehicle_id) for vehicle_id in vehicle_ids)
-                dentisy_from = vehicle_occupancy_length/traci.lane.getLength(one_lane)
-                signal_index,remain_time = get_lane_state(one_lane, lane_index_dict, lane_adj)
-                from_temp.extend([dentisy_to,signal_index,remain_time])
+                vehicle_ids = Global_Vars.JuncLib[intersection_id].vehicle_ids[one_lane]
+                vehicle_occupancy_length = sum(Global_Vars.VehicleLib[vehicle_id].length for vehicle_id in vehicle_ids)
+                dentisy_from = vehicle_occupancy_length / Global_Vars.Lanes_length[one_lane]
+                signal_index = traffic_signal_dict[Global_Vars.LightLib[intersection_id].phase[one_lane]]#get_lane_state(one_lane, lane_index_dict, lane_adj)
+                remain_time = Global_Vars.LightLib[intersection_id].remaining_time[one_lane]
+                from_temp.extend([dentisy_from,signal_index,remain_time])
             from_temp += [0]*(3*3 - len(from_temp))
             new_state.extend(from_temp)
 
 
         elif now_signal_state == 0 and next_signal_state == 0 and next_3_signal_state == 1:
-            vehicle_ids = traci.lane.getLastStepVehicleIDs(lane)
-            vehicle_occupancy_length = sum(traci.vehicle.getLength(vehicle_id) for vehicle_id in vehicle_ids)
-            dentisy_self = vehicle_occupancy_length / traci.lane.getLength(lane)  # self占用率
+            vehicle_ids = Global_Vars.JuncLib[intersection_id].vehicle_ids[lane]
+            vehicle_occupancy_length = sum(Global_Vars.VehicleLib[vehicle_id].length for vehicle_id in vehicle_ids)
+            dentisy_self = vehicle_occupancy_length / Global_Vars.Lanes_length[lane]  # self占用率
             next_green_density_new.append(dentisy_self)
     next_state_of_last.extend(next_green_density_last)
     new_state.extend(next_green_density_new)
@@ -346,29 +345,30 @@ class TrafficLightController(threading.Thread):
     def run(self):
 
         while self.running > 0:
-            if traci.trafficlight.getPhase(self.Traffic_Signal_id) in [1,3,5,7] and get_remaining_phase_time(self.Traffic_Signal_id)<Least_Check_Time and self.agent.CheckOrNot is False:
-                next_state,new_state = get_state(self.Traffic_Signal_id,self.lane_index_dict,self.lane_adj_matrix,traci.trafficlight.getPhase(self.Traffic_Signal_id))
+            if Global_Vars.LightLib[self.Traffic_Signal_id].nowphase_index in [1,3,5,7] and Global_Vars.LightLib[self.Traffic_Signal_id].remaining_time_common < Least_Check_Time and self.agent.CheckOrNot is False:
+                next_state,new_state = get_state(self.Traffic_Signal_id,self.lane_index_dict,self.lane_adj_matrix)
                 reward = get_reward(self.Traffic_Signal_id,self.agent,Action_list,Global_Vars.junction_counts)
                 self.agent.memory.append((self.agent.state, self.agent.action, reward, next_state))
                 self.agent.step += 1
                 self.agent.action = self.agent.act(next_state)
                 self.agent.state = new_state
-                #traci.trafficlight.setPhase(self.Traffic_Signal_id, Action_List[action])    设置相位  不明白为什么这里注释了
+                # traci.trafficlight.setPhase(self.Traffic_Signal_id, Action_List[action])    设置相位  不明白为什么这里注释了
                 # 应该是改用了setPhaseDuration的方法
-                self.agent.reward_delta = reward
+                self.agent.reward_delta = reward    
                 self.agent.total_reward += reward
                 self.agent.CheckOrNot = True       
 
-        if traci.trafficlight.getPhase(self.Traffic_Signal_id) in [0,2,4,6] and self.agent.CheckOrNot is True and get_remaining_phase_time(self.Traffic_Signal_id)>Least_Check_Time:
-            temp_duration = get_remaining_phase_time(self.Traffic_Signal_id)
-            traci.trafficlight.setPhaseDuration(self.Traffic_Signal_id, float(Action_list[self.agent.action]))
-            #print(f"Agent: {Traffic_Signal_id} 原:{temp_duration} 现在:{get_remaining_phase_time(Traffic_Signal_id)} ")
-            self.agent.CheckOrNot = False
-            if self.agent.step%train_gap == 0 and self.agent.step>=train_batchsize and Train_Or_Not:
-                self.agent.train(train_batchsize)
-                self.agent.update_target_network()
-                torch.save(self.agent.q_network.state_dict(), f'models/{self.Traffic_Signal_id}_model.pth')
-                print(f"Agent: {self.Traffic_Signal_id} Reward = {self.agent.reward_delta} Epsilon = {self.agent.epsilon} Trained_time = {self.agent.Trained_time}")
+
+
+            if Global_Vars.LightLib[self.Traffic_Signal_id].nowphase_index in [0,2,4,6] and self.agent.CheckOrNot is True and Global_Vars.LightLib[self.Traffic_Signal_id].remaining_time_common > Least_Check_Time:
+                traci.trafficlight.setPhaseDuration(self.Traffic_Signal_id, float(Action_list[self.agent.action]))
+                #print(f"Agent: {Traffic_Signal_id} 原:{temp_duration} 现在:{get_remaining_phase_time(Traffic_Signal_id)} ")
+                self.agent.CheckOrNot = False
+                if self.agent.step%train_gap == 0 and self.agent.step>=train_batchsize and Train_Or_Not:
+                    self.agent.train(train_batchsize)
+                    self.agent.update_target_network()
+                    torch.save(self.agent.q_network.state_dict(), f'models/{self.Traffic_Signal_id}_model.pth')
+                    print(f"Agent: {self.Traffic_Signal_id} Reward = {self.agent.reward_delta} Epsilon = {self.agent.epsilon} Trained_time = {self.agent.Trained_time}")
 
 
 

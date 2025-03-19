@@ -28,19 +28,19 @@ class JunctionController(threading.Thread):
         lane_vehicles = {}
         for laneID in lane_ids:
             # 获取当前车道上的车辆
-            lane_vehicles[laneID] = list(traci.lane.getLastStepVehicleIDs(laneID))
+            lane_vehicles[laneID] = list(Global_Vars.JuncLib[self.junction_id].vehicle_ids[laneID])
             # 获取车道长度
-            lane_length = traci.lane.getLength(laneID)
+            lane_length = Global_Vars.Lanes_length[laneID]
             # 筛选后四分之一段的车辆
             vehicles_in_last_quarter = [
                 vehID for vehID in lane_vehicles[laneID]
-                if traci.vehicle.getLanePosition(vehID) > 0.5 * lane_length
+                if Global_Vars.VehicleLib[vehID].laneposition > 0.5 * lane_length
             ]
             self.last_quarter_vehicles[laneID] = vehicles_in_last_quarter #idx=0的车是最靠近lane终点的，以此类推
 
     def update_cav_speeds(self):
         start_time = time.time()
-        now_time = traci.simulation.getTime()
+        now_time = Global_Vars.simulate_info.now_time
         for lane_id in self.traffic_light_to_lanes[self.junction_id]:
             num_CAV = 0
             num_HDV = 0
@@ -58,13 +58,13 @@ class JunctionController(threading.Thread):
                     Global_Vars.vehicle_threads[vehicle_id].control_signal_new = []
                     num_CAV +=1
                     type_list.append('CAV')
-                    state = [traci.vehicle.getLanePosition(vehicle_id), traci.vehicle.getSpeed(vehicle_id)]
+                    state = [Global_Vars.VehicleLib[vehicle_id].laneposition, Global_Vars.VehicleLib[vehicle_id].speed]
                     initial_state_CAV.append(state)
                     CAV_id_list.append(vehicle_id)
                 elif vehicle_id[0:3] == "HDV":
                     num_HDV +=1
                     type_list.append('HDV')
-                    state = [traci.vehicle.getLanePosition(vehicle_id), traci.vehicle.getSpeed(vehicle_id)]
+                    state = [Global_Vars.VehicleLib[vehicle_id].laneposition, Global_Vars.VehicleLib[vehicle_id].speed]
                     initial_state_HDV.append(state)
                     HDV_id_list.append(vehicle_id)
                 #CAV HDV的状态都要收集 但是只控制CAV
@@ -77,7 +77,7 @@ class JunctionController(threading.Thread):
                 initial_state_HDV = np.array(initial_state_HDV)
 
                 #mpc_control(initial_state, 0, weights=[1.0,0.5], N=20, dt=dt, bounds=(MIN_ACCEL,MAX_ACCEL,0,MAX_SPEED),type_info=type_info,now_lane = lane_id,lane_towards = lane_towards,last_quarter_vehicles=last_quarter_vehicles)
-                solve_status,u = QP_solver(initial_state_CAV, initial_state_HDV, vehicles_list_this_lane, Global_Vars.N, Global_Vars.dt, v_max=Global_Vars.MAX_SPEED, v_min=Global_Vars.MIN_SPEED, a_max=Global_Vars.MAX_ACCEL,a_min=Global_Vars.MIN_ACCEL, L_safe=Global_Vars.L_safe, lane_now=lane_id, CAV_id_list=CAV_id_list, HDV_id_list=HDV_id_list)
+                solve_status,u = QP_solver(initial_state_CAV, initial_state_HDV, vehicles_list_this_lane, Global_Vars.N, Global_Vars.dt, v_max=Global_Vars.MAX_SPEED, v_min=Global_Vars.MIN_SPEED, a_max=Global_Vars.MAX_ACCEL,a_min=Global_Vars.MIN_ACCEL, L_safe=Global_Vars.L_safe, lane_now=lane_id, CAV_id_list=CAV_id_list, HDV_id_list=HDV_id_list,intersection_id=self.junction_id)
 
                 if solve_status:
                     i = 0 

@@ -99,17 +99,26 @@ class Vehicle():
     def __init__(self,id,type):
         self.id = id #
         self.type = type # 'CAV' 'HDV'
-        self.v = 0
-        self.pos = (0.0,0.0)
-        self.lane = '' 
+        self.speed = traci.vehicle.getSpeed(self.id)
+        self.pos = traci.vehicle.getPosition(self.id)
+        self.lane = traci.vehicle.getLaneID(self.id) 
         self.vehicle_length = traci.vehicle.getLength(self.id)
-
-    def update(self,v,pos,lane,leader):
-        self.v = v
-        self.pos = pos
-        self.lane = lane
-        self.leader = leader # getleader 的返回值 (leader_id,gap)
+        self.leader = traci.vehicle.getLeader(self.id) # getleader 的返回值 (leader_id,gap)
         self.laneposition = traci.vehicle.getLanePosition(self.id)
+        self.RoadID = traci.vehicle.getRoadID(self.id)
+        self.length = traci.vehicle.getLength(self.id)
+        self.running = True
+
+    def update(self):
+        try:
+            self.speed = traci.vehicle.getSpeed(self.id)
+            self.pos = traci.vehicle.getPosition(self.id)
+            self.lane = traci.vehicle.getLaneID(self.id)
+            self.leader = traci.vehicle.getLeader(self.id) # getleader 的返回值 (leader_id,gap)
+            self.laneposition = traci.vehicle.getLanePosition(self.id)
+            self.RoadID = traci.vehicle.getRoadID(self.id)
+        except:
+            self.running = False
 
 JuncLib = {}
 class Junc():
@@ -119,11 +128,12 @@ class Junc():
         self.lane_ids = traffic_light_to_lanes[self.id]
         self.vehicle_num = {laneID:0 for laneID in self.lane_ids}
         self.lanes_length = {laneID:traci.lane.getLength(laneID) for laneID in self.lane_ids}
+        self.vehicle_ids = {laneID:[] for laneID in self.lane_ids}
 
 
     def update(self):
         self.vehicle_num = {laneID:traci.lane.getLastStepVehicleNumber(laneID) for laneID in self.lane_ids}
-
+        self.vehicle_ids = {laneID:traci.lane.getLastStepVehicleIDs(laneID) for laneID in self.lane_ids}
 
 LightLib = {}
 class Light():
@@ -136,10 +146,12 @@ class Light():
         self.lane_type_incoming = {k:is_incoming_lane(k) for k in self.lane_ids}
         self.completeRedYellowGreenDefinition = traci.trafficlight.getCompleteRedYellowGreenDefinition(self.id)
         self.controlled_lanes = traci.trafficlight.getControlledLanes(self.id)
+        self.remaining_time_common = 0
 
     def update(self):
         for laneID in self.lane_ids:
             self.phase[laneID],self.remaining_time[laneID] = get_remaining_phase_and_time(laneID)
+            
             if self.phase[laneID] == 'r':
                 self.nextphase[laneID] = 'g'
             elif self.phase[laneID] == 'g':
@@ -147,9 +159,12 @@ class Light():
             else:
                 self.nextphase[laneID] = 'r'
 
-        nowphase_index = traci.trafficlight.getPhase(self.id)
-        self.next_phase_state = self.completeRedYellowGreenDefinition(self.id)[0].phases[(nowphase_index + 1) % 8].state
-        self.next_3_phase_state = self.completeRedYellowGreenDefinition(self.id)[0].phases[(nowphase_index + 3) % 8].state
+        self.remaining_time_common = self.remaining_time[laneID]
+
+        self.nowphase_index = traci.trafficlight.getPhase(self.id)
+        self.current_phase_state = traci.trafficlight.getRedYellowGreenState(self.id)
+        self.next_phase_state = self.completeRedYellowGreenDefinition(self.id)[0].phases[(self.nowphase_index + 1) % 8].state
+        self.next_3_phase_state = self.completeRedYellowGreenDefinition(self.id)[0].phases[(self.nowphase_index + 3) % 8].state
 
 
 
@@ -158,5 +173,7 @@ class Sim_info():
         self.current_time = 0
     
     def update(self):
-        self.current_time = traci.simulation.getCurrentTime()
+        self.now_time = traci.simulation.getTime() #simulation time in s
+
+simulate_info = Global_Vars.Sim_info()
     

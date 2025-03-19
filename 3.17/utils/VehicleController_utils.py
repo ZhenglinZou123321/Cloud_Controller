@@ -41,7 +41,7 @@ def get_remaining_phase_and_time(lane_id): #获取信号灯当前相位和剩余
     x, rest = lane_id.split("t", 1)  # 分割出 X 和剩余部分
     intersection_id, z = rest.split("_", 1)  # 分割出 Y 和 Z
     # 获取当前仿真时间
-    current_time = traci.simulation.getTime()
+    current_time = Global_Vars.simulate_info.now_time
     # 获取下一个信号切换的时间
     next_switch_time = traci.trafficlight.getNextSwitch(intersection_id)
     # 计算剩余时间 秒
@@ -76,7 +76,7 @@ class VehicleController(threading.Thread):
 
             # 车流量计数
             # 获取车辆当前所在的 edge
-            current_edge = traci.vehicle.getRoadID(self.vehicle_id)
+            current_edge = Global_Vars.VehicleLib[self.vehicle_id].RoadID
             # 如果车辆在网络的有效 edge 上
             if current_edge and current_edge[0] != ":":
                 # 获取车辆的上一个 edge
@@ -95,39 +95,38 @@ class VehicleController(threading.Thread):
 
             try:
                 # 检查车辆是否仍然在仿真中
-                try:
-                    # 尝试获取车辆位置
-                    position = traci.vehicle.getPosition(self.vehicle_id)
-                except traci.exceptions.TraCIException:
+                if Global_Vars.VehicleLib[self.vehicle_id].running == False:
                     traceback.print_exc()
                     print(f"在第 {Global_Vars.step} 步，车辆 {self.vehicle_id} 不在场景中。")
                     self.running = False
                     continue
 
                 # 获取本车速度
-                self.speed = traci.vehicle.getSpeed(self.vehicle_id)
+                self.speed = Global_Vars.VehicleLib[self.vehicle_id].speed
                 # 获取前车信息
-                self.front_info = traci.vehicle.getLeader(self.vehicle_id)        
+                self.front_info = Global_Vars.VehicleLib[self.vehicle_id].leader       
                 self.idm_acc = None
                 if self.front_info != None:
                     self.front_id,self.gap = self.front_info
                     print(f"{self.vehicle_id}的前车是{self.front_id}")
 
                 # 有前车的情况下，计算idm加速度
-                if self.front_info != None and traci.vehicle.getLaneID(self.vehicle_id) == traci.vehicle.getLaneID(self.front_id):
-                    self.idm_acc = idm_acceleration(self.speed, traci.vehicle.getSpeed(self.front_id), self.gap, front_vehicle_id=None)
+                if self.front_info != None and Global_Vars.VehicleLib[self.vehicle_id].lane == Global_Vars.VehicleLib[self.front_id].lane:
+                    self.idm_acc = idm_acceleration(self.speed, Global_Vars.VehicleLib[self.front_id].speed, self.gap, front_vehicle_id=None)
                 else:
                     # 无前车的情况下，或者前车与本车不在一个车道时
-                    self.lane_now = traci.vehicle.getLaneID(self.vehicle_id)
+                    self.lane_now = Global_Vars.VehicleLib[self.vehicle_id].lane
                     # 如果车辆目前在路口外
                     if lane_is_out_junction(self.lane_now):
                         # 如果该路口是智能信号灯路口
-                        if self.lane_now in Global_Vars.Intelligent_Sigal_List:
-                            self.phase,self.remaining_time = get_remaining_phase_and_time(self.lane_now)
+                        if Global_Vars.lane_to_traffic_light[self.lane_now] in Global_Vars.Intelligent_Sigal_List:
+                            self.phase = Global_Vars.LightLib[Global_Vars.lane_to_traffic_light[self.lane_now]].phase[self.lane_now]
+                            self.remaining_time =  Global_Vars.LightLib[Global_Vars.lane_to_traffic_light[self.lane_now]].remaining_time[self.lane_now]
+                            #get_remaining_phase_and_time(self.lane_now)
                             if self.phase == 'r' or self.phase == 'y':
-                                self.lane_length = traci.lane.getLength(self.lane_now)
+                                self.lane_length = Global_Vars.Lanes_length[self.lane_now]
                                 self.idm_acc = idm_acceleration(self.speed, 0.0,
-                                                            self.lane_length-traci.vehicle.getLanePosition(self.vehicle_id),
+                                                            self.lane_length-Global_Vars.VehicleLib[self.vehicle_id].laneposition,
                                                             front_vehicle_id=None)
                         # 如果该路口不是智能信号灯路口
                         #*********************************************

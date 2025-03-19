@@ -62,30 +62,33 @@ with open('traffic_data_gaussian.csv', mode='w', newline='') as file:
 
 
 
+
 if __name__ == '__main__':
 
     # 路口、信号灯线程创建 路口数据库构建
     #******************************
     for junc in Global_Vars.Intelligent_Sigal_List:
         controller = JunctionController(junc,Global_Vars.traffic_light_to_lanes,Global_Vars.N,Global_Vars.dt,Global_Vars.L_safe)
-        controller.start()
         juncclass = Global_Vars.Junc(junc)
         Global_Vars.JuncLib[junc] = juncclass
+        controller.start()
 
     # 信号灯线程创建 信号灯数据库构建
     #******************************
     for junc in Global_Vars.Intelligent_Sigal_List:
         controller = TrafficLightController(junc,Global_Vars.traffic_light_to_lanes,Global_Vars.lane_index_dict,Global_Vars.lane_adj_matrix,Global_Vars.N,Global_Vars.dt,Global_Vars.L_safe)
-        controller.start()
         lightclass = Global_Vars.Light(junc)
         Global_Vars.LightLib[junc] = lightclass
+        controller.start()
 
         
     # 开始仿真
     print("ready to start")
 
     while traci.simulation.getMinExpectedNumber() > 0:
-        traci.simulationStep()
+        #traci.simulationStep()
+        Global_Vars.simulate_info.update()
+
         
         # 数据读取过程
 
@@ -105,14 +108,12 @@ if __name__ == '__main__':
                     Global_Vars.vehicle_threads[vehicle_id] = controller
                     print(f"Started thread for vehicle {vehicle_id}")
                     continue
-            Global_Vars.VehicleLib[vehicle_id].update(traci.vehicle.getAccel(vehicle_id),
-                                                      traci.vehicle.getPosition(vehicle_id),
-                                                      traci.vehicle.getLaneID(vehicle_id),
-                                                      traci.vehicle.getLeader(vehicle_id))
+
+            Global_Vars.VehicleLib[vehicle_id].update()
+
         for junc in Global_Vars.Intelligent_Sigal_List:
             Global_Vars.JuncLib[junc].update()  
             Global_Vars.LightLib[junc].update()      
-
 
 
 
