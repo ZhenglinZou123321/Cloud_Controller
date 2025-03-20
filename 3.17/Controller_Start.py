@@ -75,7 +75,9 @@ if __name__ == '__main__':
 
     # 信号灯线程创建 信号灯数据库构建
     #******************************
-    device = 'cpu'
+    
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     for junc in Global_Vars.Intelligent_Sigal_List:
         print(junc + "1111")
         controller = TrafficLightController(junc,Global_Vars.traffic_light_to_lanes,Global_Vars.lane_index_dict,Global_Vars.lane_adj_matrix,Global_Vars.N,Global_Vars.dt,Global_Vars.L_safe,device=device)
@@ -115,7 +117,9 @@ if __name__ == '__main__':
 
         print('step--2')
         for junc in Global_Vars.Intelligent_Sigal_List:
+            print(junc + 'Junc')
             Global_Vars.JuncLib[junc].update()  
+            print(junc + 'Light')
             Global_Vars.LightLib[junc].update()      
 
         print('step--3')
