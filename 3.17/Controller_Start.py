@@ -1,4 +1,8 @@
 import traci
+# Traci远程连接的设置
+traci.init(port = 14491,host="192.168.100.104")
+traci.setOrder(0) #设置优先级，数字越小，越高
+print('111')
 import sumolib
 import threading
 import numpy as np
@@ -11,7 +15,6 @@ from utils.Solver_utils import *
 from utils.junction_utils import *
 from utils.traffic_light import *
 import Global_Vars
-
 
 '''
 dt = 0.2
@@ -43,10 +46,7 @@ vehicles = []'''
 # 获取当前脚本所在的目录
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
-# Traci远程连接的设置
-traci.init(port = 14491,host="192.168.100.104")
-print('111')
-traci.setOrder(0) #设置优先级，数字越小，越高
+
 
 
 
@@ -75,8 +75,11 @@ if __name__ == '__main__':
 
     # 信号灯线程创建 信号灯数据库构建
     #******************************
+    device = 'cpu'
     for junc in Global_Vars.Intelligent_Sigal_List:
-        controller = TrafficLightController(junc,Global_Vars.traffic_light_to_lanes,Global_Vars.lane_index_dict,Global_Vars.lane_adj_matrix,Global_Vars.N,Global_Vars.dt,Global_Vars.L_safe)
+        print(junc + "1111")
+        controller = TrafficLightController(junc,Global_Vars.traffic_light_to_lanes,Global_Vars.lane_index_dict,Global_Vars.lane_adj_matrix,Global_Vars.N,Global_Vars.dt,Global_Vars.L_safe,device=device)
+        controller.agent.init_optimizer()  # 主线程初始化优化器
         lightclass = Global_Vars.Light(junc)
         Global_Vars.LightLib[junc] = lightclass
         controller.start()
@@ -86,9 +89,9 @@ if __name__ == '__main__':
     print("ready to start")
 
     while traci.simulation.getMinExpectedNumber() > 0:
-        #traci.simulationStep()
+        
         Global_Vars.simulate_info.update()
-
+        print('step--1')
         
         # 数据读取过程
 
@@ -111,15 +114,18 @@ if __name__ == '__main__':
 
             Global_Vars.VehicleLib[vehicle_id].update()
 
+        print('step--2')
         for junc in Global_Vars.Intelligent_Sigal_List:
             Global_Vars.JuncLib[junc].update()  
             Global_Vars.LightLib[junc].update()      
 
-
+        print('step--3')
 
 
         # Step 仿真步的记录
         Global_Vars.step += 1
+        print(Global_Vars.step)
+        traci.simulationStep()
 
 
 

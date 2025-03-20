@@ -3,10 +3,43 @@ import sumolib
 import json
 import pandas as pd
 import traci
-from utils.VehicleController_utils import *
-from utils.traffic_light import *
 
 
+class Sim_info():
+    def __init__(self):
+        self.now_time = traci.simulation.getTime() #simulation time in s
+
+    def update(self):
+        self.now_time = traci.simulation.getTime() #simulation time in s
+
+simulate_info = Sim_info()
+
+def get_remaining_phase_and_time(lane_id): #获取信号灯当前相位和剩余时间
+    # 按照固定字符进行分割
+    x, rest = lane_id.split("t", 1)  # 分割出 X 和剩余部分
+    intersection_id, z = rest.split("_", 1)  # 分割出 Y 和 Z
+    # 获取当前仿真时间
+    current_time = simulate_info.now_time
+    # 获取下一个信号切换的时间
+    next_switch_time = traci.trafficlight.getNextSwitch(intersection_id)
+    # 计算剩余时间 秒
+    remaining_time = next_switch_time - current_time
+    current_phase = traci.trafficlight.getRedYellowGreenState(intersection_id)[traci.trafficlight.getControlledLanes(intersection_id).index(lane_id)]
+    return current_phase.lower(),max(remaining_time, 0)  # 防止负值
+
+
+
+def is_incoming_lane(lane_id):
+    # 获取该车道的链接信息
+    links = traci.lane.getLinks(lane_id)
+    if not links:
+        return False  #如果没有链接，则不属于驶入车道
+
+    # 如果第一段链接是进入路口的（交叉口），则该车道为驶入车道
+    next_lane_id, via_edge_id, signal_index, traffic_light_id = links[0]
+    if traffic_light_id:
+        return True  #有信号灯控制则为驶入路口车道
+    return False
 
 step = 0
 
@@ -51,6 +84,7 @@ with open("Graph/junction_index.json", "r") as f:
 with open("Graph/lane_index.json", "r") as f:
     lane_index_dict = json.load(f)
     index_lane_dict = {v: k for k, v in lane_index_dict.items()}  # 构造反向字典
+reversed_lane_dict = {str(v): k for k, v in lane_index_dict.items()}
 
 # 邻接矩阵读取
 df = pd.read_csv("Graph/junction_adj_matrix.csv", index_col=0)
@@ -89,8 +123,7 @@ Intelligent_Sigal_List = ['j5', 'j6', 'j7', 'j10','j11','j12']
 
 
 # 数据存储结构
-for junc in traffic_light_to_lanes.keys():
-    Lanes_length = {laneID:traci.lane.getLength(laneID) for laneID in traffic_light_to_lanes[junc]}
+Lanes_length = {laneID:traci.lane.getLength(laneID) for laneID in lane_index_dict.keys()}
 
 
 
@@ -138,8 +171,8 @@ class Junc():
 LightLib = {}
 class Light():
     def __init__(self,id):
-        self.lane_ids = traffic_light_to_lanes[self.id]
         self.id = id #
+        self.lane_ids = traffic_light_to_lanes[self.id]
         self.phase = {k:'' for k in self.lane_ids} #'r' 'g' 'y'
         self.remaining_time = {k:0 for k in self.lane_ids}
         self.nextphase = {k:'' for k in self.lane_ids}
@@ -168,12 +201,5 @@ class Light():
 
 
 
-class Sim_info():
-    def __init__(self):
-        self.current_time = 0
-    
-    def update(self):
-        self.now_time = traci.simulation.getTime() #simulation time in s
 
-simulate_info = Global_Vars.Sim_info()
     

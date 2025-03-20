@@ -88,8 +88,8 @@ class JunctionController(threading.Thread):
         end_time = time.time()
         elapsed_time = end_time - start_time
 
-        with open(self.log_file,"a") as f:
-            print(f"{self.junction_id}  计算耗时: {elapsed_time:.4f} 秒")
+        '''with open(self.log_file,"a") as f:
+            print(f"{self.junction_id}  计算耗时: {elapsed_time:.4f} 秒")'''
 
     def run(self):
         while self.running:

@@ -36,21 +36,6 @@ def lane_is_out_junction(s):
     return False
 
 
-def get_remaining_phase_and_time(lane_id): #获取信号灯当前相位和剩余时间
-    # 按照固定字符进行分割
-    x, rest = lane_id.split("t", 1)  # 分割出 X 和剩余部分
-    intersection_id, z = rest.split("_", 1)  # 分割出 Y 和 Z
-    # 获取当前仿真时间
-    current_time = Global_Vars.simulate_info.now_time
-    # 获取下一个信号切换的时间
-    next_switch_time = traci.trafficlight.getNextSwitch(intersection_id)
-    # 计算剩余时间 秒
-    remaining_time = next_switch_time - current_time
-    current_phase = traci.trafficlight.getRedYellowGreenState(intersection_id)[traci.trafficlight.getControlledLanes(intersection_id).index(lane_id)]
-    return current_phase.lower(),max(remaining_time, 0)  # 防止负值
-
-
-
 
 class VehicleController(threading.Thread):
     def __init__(self, vehicle_id_,dt):

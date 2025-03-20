@@ -27,7 +27,6 @@ Least_Check_Time = 3
 train_gap = 20
 train_batchsize = 32
 
-reversed_lane_dict = {str(v): k for k, v in Global_Vars.lane_index_dict.items()}
 
 
 
@@ -65,17 +64,7 @@ def match_strings(str1, str2):
         return (part1_1 == part2_2 and part2_1 == part1_2) or (part1_1 == part1_2 and part2_1 == part2_2)
     return False
 
-def is_incoming_lane(lane_id):
-    # 获取该车道的链接信息
-    links = traci.lane.getLinks(lane_id)
-    if not links:
-        return False  #如果没有链接，则不属于驶入车道
 
-    # 如果第一段链接是进入路口的（交叉口），则该车道为驶入车道
-    next_lane_id, via_edge_id, signal_index, traffic_light_id = links[0]
-    if traffic_light_id:
-        return True  #有信号灯控制则为驶入路口车道
-    return False
 
 def get_remaining_phase_time(traffic_light_id): #获取信号灯剩余时间
     # 获取当前仿真时间
@@ -145,9 +134,9 @@ def get_state(intersection_id,lane_index_dict,lane_adj):
             from_list = np.nonzero(lane_adj[:, lane_index])[0]#来这个lane的索引
             next_state_of_last.extend([dentisy_self])
             for one_lane in to_list:
-                if match_strings(reversed_lane_dict[str(one_lane)][:-2],lane[:-2]):
+                if match_strings(Global_Vars.reversed_lane_dict[str(one_lane)][:-2],lane[:-2]):
                     continue
-                one_lane = reversed_lane_dict[str(one_lane)]
+                one_lane = Global_Vars.reversed_lane_dict[str(one_lane)]
                 vehicle_ids = Global_Vars.JuncLib[intersection_id].vehicle_ids[one_lane]
                 vehicle_occupancy_length = sum(Global_Vars.VehicleLib[vehicle_id].length for vehicle_id in vehicle_ids)
                 dentisy_to = vehicle_occupancy_length/Global_Vars.Lanes_length[one_lane]
@@ -157,9 +146,9 @@ def get_state(intersection_id,lane_index_dict,lane_adj):
 
             from_temp = []
             for one_lane in from_list:
-                if match_strings(reversed_lane_dict[str(one_lane)][:-2],lane[:-2]):
+                if match_strings(Global_Vars.reversed_lane_dict[str(one_lane)][:-2],lane[:-2]):
                     continue
-                one_lane = reversed_lane_dict[str(one_lane)]
+                one_lane = Global_Vars.reversed_lane_dict[str(one_lane)]
                 vehicle_ids = Global_Vars.JuncLib[intersection_id].vehicle_ids[one_lane]
                 vehicle_occupancy_length = sum(Global_Vars.VehicleLib[vehicle_id].length for vehicle_id in vehicle_ids)
                 dentisy_from = vehicle_occupancy_length/Global_Vars.Lanes_length[one_lane]
@@ -180,9 +169,9 @@ def get_state(intersection_id,lane_index_dict,lane_adj):
             new_state.extend([dentisy_self])
             next_green_density_last.append(dentisy_self)
             for one_lane in to_list:
-                if match_strings(reversed_lane_dict[str(one_lane)][:-2],lane[:-2]):
+                if match_strings(Global_Vars.reversed_lane_dict[str(one_lane)][:-2],lane[:-2]):
                     continue
-                one_lane = reversed_lane_dict[str(one_lane)]
+                one_lane = Global_Vars.reversed_lane_dict[str(one_lane)]
                 vehicle_ids = Global_Vars.JuncLib[intersection_id].vehicle_ids[one_lane]
                 vehicle_occupancy_length = sum(Global_Vars.VehicleLib[vehicle_id].length for vehicle_id in vehicle_ids)
                 dentisy_to = vehicle_occupancy_length/Global_Vars.Lanes_length[one_lane]
@@ -192,9 +181,9 @@ def get_state(intersection_id,lane_index_dict,lane_adj):
 
             from_temp = []
             for one_lane in from_list:
-                if match_strings(reversed_lane_dict[str(one_lane)][:-2],lane[:-2]):
+                if match_strings(Global_Vars.reversed_lane_dict[str(one_lane)][:-2],lane[:-2]):
                     continue
-                one_lane = reversed_lane_dict[str(one_lane)]
+                one_lane = Global_Vars.reversed_lane_dict[str(one_lane)]
                 vehicle_ids = Global_Vars.JuncLib[intersection_id].vehicle_ids[one_lane]
                 vehicle_occupancy_length = sum(Global_Vars.VehicleLib[vehicle_id].length for vehicle_id in vehicle_ids)
                 dentisy_from = vehicle_occupancy_length / Global_Vars.Lanes_length[one_lane]
@@ -249,18 +238,21 @@ class QNetwork(nn.Module):
 
 
 class DDQNAgent:
-    def __init__(self, state_size, action_size):
+    def __init__(self, state_size, action_size,device = 'cpu'):
         self.state_size = state_size
         self.action_size = action_size #[10,15,20,25,30,35,40] 7
+        self.device = device
         self.memory = deque(maxlen=2000)
         self.gamma = 0.99
         self.epsilon = 0.5
         self.epsilon_decay = 0.99
         self.epsilon_min = 0.01
         self.learning_rate = 0.001
-        self.q_network = QNetwork(state_size, action_size)
+        self.q_network = QNetwork(state_size, action_size).to(self.device)
         self.target_network = QNetwork(state_size, action_size)
-        self.optimizer = optim.Adam(self.q_network.parameters(), lr=self.learning_rate)
+        self.target_network.load_state_dict(self.q_network.state_dict())
+        #self.optimizer = optim.Adam(self.q_network.parameters(), lr=self.learning_rate)
+        self.optimizer = None
         self.update_target_network()
         self.now_Duration = 0
         self.ChangeOrNot = False
@@ -272,6 +264,11 @@ class DDQNAgent:
         self.step = 0
         self.Trained_time = 0
         self.passed_count = 0
+
+    def init_optimizer(self):
+        """在主线程调用以初始化优化器"""
+        self.optimizer = optim.Adam(self.q_network.parameters(), lr=self.learning_rate)
+
 
     def update_target_network(self):
         self.target_network.load_state_dict(self.q_network.state_dict())
@@ -311,10 +308,11 @@ class DDQNAgent:
 
 
 class TrafficLightController(threading.Thread):
-    def __init__(self, Traffic_Signal_id_,traffic_light_to_lanes_,lane_index_dict,lane_adj_matrix,N,dt,L_safe):
+    def __init__(self, Traffic_Signal_id_,traffic_light_to_lanes_,lane_index_dict,lane_adj_matrix,N,dt,L_safe,device):
         threading.Thread.__init__(self)
         self.Traffic_Signal_id = Traffic_Signal_id_
-        self.agent = DDQNAgent(state_size,len(Action_list))
+        self.device = device
+        self.agent = DDQNAgent(state_size,len(Action_list),self.device)
         self.running = True
         self.idm_acc = 0
         self.control_signal = []
