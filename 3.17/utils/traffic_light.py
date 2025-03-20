@@ -265,9 +265,8 @@ class DDQNAgent:
         self.Trained_time = 0
         self.passed_count = 0
 
-    def init_optimizer(self):
-        """在主线程调用以初始化优化器"""
-        self.optimizer = optim.Adam(self.q_network.parameters(), lr=self.learning_rate)
+
+        
 
 
     def update_target_network(self):
@@ -282,7 +281,7 @@ class DDQNAgent:
 
     def train(self, batch_size):
         minibatch = random.sample(self.memory, batch_size)
-
+        self.optimizer = optim.Adam(self.q_network.parameters(), lr=self.learning_rate)
         for state, action, reward, next_state in minibatch:
             target = reward
 

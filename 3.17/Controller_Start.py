@@ -79,7 +79,6 @@ if __name__ == '__main__':
     for junc in Global_Vars.Intelligent_Sigal_List:
         print(junc + "1111")
         controller = TrafficLightController(junc,Global_Vars.traffic_light_to_lanes,Global_Vars.lane_index_dict,Global_Vars.lane_adj_matrix,Global_Vars.N,Global_Vars.dt,Global_Vars.L_safe,device=device)
-        controller.agent.init_optimizer()  # 主线程初始化优化器
         lightclass = Global_Vars.Light(junc)
         Global_Vars.LightLib[junc] = lightclass
         controller.start()
