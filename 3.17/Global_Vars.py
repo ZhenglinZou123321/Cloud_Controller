@@ -1,16 +1,20 @@
 import os
+import time
 import sumolib
 import json
 import pandas as pd
 import traci
+import traci.constants
 
 
 class Sim_info():
     def __init__(self):
         self.now_time = traci.simulation.getTime() #simulation time in s
+        self.step = 0.2
 
     def update(self):
-        self.now_time = traci.simulation.getTime() #simulation time in s
+        self.now_time += self.step
+        #self.now_time = traci.simulation.getTime() #simulation time in s
 
 simulate_info = Sim_info()
 
@@ -124,15 +128,14 @@ class Vehicle():
         self.type = type # 'CAV' 'HDV'
         # 订阅车辆数据
         traci.vehicle.subscribe(self.id, [
-            traci.vehicle.VAR_SPEED,
-            traci.vehicle.VAR_POSITION,
-            traci.vehicle.VAR_LANE_ID,
-            traci.vehicle.VAR_LEADER,
-            traci.vehicle.VAR_LANE_POSITION,
-            traci.vehicle.VAR_ROAD_ID
+            traci.constants.VAR_SPEED,
+            traci.constants.VAR_LANE_ID,
+            traci.constants.VAR_LANEPOSITION,
+            traci.constants.VAR_ROAD_ID
         ])
         self.length = traci.vehicle.getLength(self.id)
         self.running = True
+        traci.vehicle.subscribeLeader(self.id)
         self.update()
 
     def update(self):
@@ -142,12 +145,11 @@ class Vehicle():
             if subscription_results is None:
                 self.running = False
                 return
-            self.speed = subscription_results[traci.vehicle.VAR_SPEED]
-            self.pos = subscription_results[traci.vehicle.VAR_POSITION]
-            self.lane = subscription_results[traci.vehicle.VAR_LANE_ID]
-            self.leader = subscription_results[traci.vehicle.VAR_LEADER]
-            self.laneposition = subscription_results[traci.vehicle.VAR_LANE_POSITION]
-            self.RoadID = subscription_results[traci.vehicle.VAR_ROAD_ID]
+            self.speed = subscription_results[traci.constants.VAR_SPEED]
+            self.lane = subscription_results[traci.constants.VAR_LANE_ID]
+            self.leader = subscription_results[traci.constants.VAR_LEADER]
+            self.laneposition = subscription_results[traci.constants.VAR_LANEPOSITION]
+            self.RoadID = subscription_results[traci.constants.VAR_ROAD_ID]
         except:
             self.running = False
 
@@ -162,7 +164,7 @@ class Junc():
         self.vehicle_ids = {laneID:[] for laneID in self.lane_ids}
         # 订阅车道数据
         for lane_id in self.lane_ids:
-            traci.lane.subscribe(lane_id, [traci.lane.VAR_LAST_STEP_VEHICLE_NUMBER, traci.lane.VAR_LAST_STEP_VEHICLE_IDS])
+            traci.lane.subscribe(lane_id, [traci.constants.LAST_STEP_VEHICLE_NUMBER, traci.constants.LAST_STEP_VEHICLE_ID_LIST])
         self.update()
 
 
@@ -170,10 +172,10 @@ class Junc():
         # 这种频繁traci的过程很费时间
         '''self.vehicle_num = {laneID:traci.lane.getLastStepVehicleNumber(laneID) for laneID in self.lane_ids}
         self.vehicle_ids = {laneID:traci.lane.getLastStepVehicleIDs(laneID) for laneID in self.lane_ids}'''
-        subscription_results = traci.lane.getSubscriptionResults()
-        self.vehicle_num = {lane_id: subscription_results[lane_id][traci.lane.VAR_LAST_STEP_VEHICLE_NUMBER] 
+        subscription_results = {k:traci.lane.getSubscriptionResults(k) for k in self.lane_ids}
+        self.vehicle_num = {lane_id: subscription_results[lane_id][traci.constants.LAST_STEP_VEHICLE_NUMBER] 
                            for lane_id in self.lane_ids}
-        self.vehicle_ids = {lane_id: subscription_results[lane_id][traci.lane.VAR_LAST_STEP_VEHICLE_IDS] 
+        self.vehicle_ids = {lane_id: subscription_results[lane_id][traci.constants.LAST_STEP_VEHICLE_ID_LIST] 
                            for lane_id in self.lane_ids}
 
 LightLib = {}
@@ -186,18 +188,25 @@ class Light():
         self.nextphase = {k:'' for k in self.lane_ids}
 
         # 通过订阅的方式，避免频繁traci
-        traci.trafficlight.subscribe(self.id, [traci.trafficlight.VAR_NEXT_SWITCH, traci.trafficlight.VAR_STATE])
+        traci.trafficlight.subscribe(self.id, [traci.constants.TL_NEXT_SWITCH, traci.constants.TL_RED_YELLOW_GREEN_STATE])
         self.completeRedYellowGreenDefinition = traci.trafficlight.getCompleteRedYellowGreenDefinition(self.id)
         self.controlled_lanes = traci.trafficlight.getControlledLanes(self.id)
+        self.programID = traci.trafficlight.getProgram(self.id)
+        self.phaselist = {self.completeRedYellowGreenDefinition[0].phases[index].state:index for index in range(len(self.completeRedYellowGreenDefinition[0].phases))}
         self.remaining_time_common = 0
         self.update()
 
     def update(self):
+        #start1 = time.time()
         tl_subscription = traci.trafficlight.getSubscriptionResults(self.id)
-        next_switch_time = tl_subscription[traci.trafficlight.VAR_NEXT_SWITCH]
-        current_phase_state = tl_subscription[traci.trafficlight.VAR_STATE]
+        ##print(f"{self.id} light_Subscribe采集耗时: {time.time() - start1:.6f}s")
+        #start1 = time.time()
+        next_switch_time = tl_subscription[traci.constants.TL_NEXT_SWITCH]
+        current_phase_state = tl_subscription[traci.constants.TL_RED_YELLOW_GREEN_STATE]
         remaining_time = next_switch_time - simulate_info.now_time
+        ##print(f"{self.id} light_Subscribe分配耗时: {time.time() - start1:.6f}s")
         # 解析相位状态（避免逐个查询 lane）
+        #start1 = time.time()
         for idx, lane_id in enumerate(self.controlled_lanes):
             phase = current_phase_state[idx].lower()
             self.phase[lane_id] = phase
@@ -208,15 +217,15 @@ class Light():
                 self.nextphase[lane_id] = 'y'
             else:
                 self.nextphase[lane_id] = 'r'
-
+        ##print(f"{self.id} light相位状态解析耗时: {time.time() - start1:.6f}s")
         self.remaining_time_common = remaining_time
-
-        self.nowphase_index = traci.trafficlight.getPhase(self.id)
+        #start1 = time.time()
+        #self.nowphase_index = traci.trafficlight.getPhase(self.id)
+        self.nowphase_index = self.phaselist[current_phase_state]
+        ##print(f"{self.id} light——getphase耗时: {time.time() - start1:.6f}s")
+        #start1 = time.time()
         self.current_phase_state = current_phase_state
         self.next_phase_state = self.completeRedYellowGreenDefinition[0].phases[(self.nowphase_index + 1) % 8].state
         self.next_3_phase_state = self.completeRedYellowGreenDefinition[0].phases[(self.nowphase_index + 3) % 8].state
+        ##print(f"{self.id} light——后续phase计算耗时: {time.time() - start1:.6f}s")
 
-
-
-
-    

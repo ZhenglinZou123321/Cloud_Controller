@@ -170,7 +170,7 @@ def QP_solver(initial_state_CAV,initial_state_HDV,vehicles_list_this_lane,N,dt,v
 
     for (idx,vehicle_id) in enumerate(vehicles_list_this_lane):
         if idx == 0 and (vehicle_id in CAV_id_list): #0 是最靠近路口的
-            print('加入红灯停约束')
+            #print('加入红灯停约束')
             #红灯停的约束
             HDVcons_right = construct_HDV_block_matrix(num_CAV,0)
             HDVcons = HDVcons_left @ HDVcons_right
@@ -184,7 +184,7 @@ def QP_solver(initial_state_CAV,initial_state_HDV,vehicles_list_this_lane,N,dt,v
             #硬约束
             # 加入不等式约束~~~~~~~~~~~~~
             #constraints.append(Inequal_with_u @ u <= Inequal_right)
-            #print(Inequal_right)
+            ##print(Inequal_right)
 
             #软约束
             #加入等式约束 同时更改目标函数
@@ -247,10 +247,10 @@ def QP_solver(initial_state_CAV,initial_state_HDV,vehicles_list_this_lane,N,dt,v
     objective = 0
     #objective = cp.Minimize(cp.quad_form(u, half_H_qp) + C_T @ u + 100 * cp.norm(Soft, 2))
     try:
-        print('有CAV位于首位')
+        #print('有CAV位于首位')
         objective = cp.Minimize(cp.quad_form(u, half_H_qp) + C_T @ u + 10*cp.norm(Soft,2))
     except:
-        print('无CAV位于首位')
+        #print('无CAV位于首位')
         objective = cp.Minimize(cp.quad_form(u, half_H_qp) + C_T @ u)
 
     problem = cp.Problem(objective, constraints)
@@ -258,19 +258,19 @@ def QP_solver(initial_state_CAV,initial_state_HDV,vehicles_list_this_lane,N,dt,v
     problem.solve(solver=cp.GUROBI,reoptimize=True)
 
     # 输出结果
-    #print("Solver status:", problem.status)
+    ##print("Solver status:", problem.status)
     if problem.status == 'infeasible':
         for i, constraint in enumerate(constraints):
             try:
                 lhs = constraint.args[0].value
                 rhs = constraint.args[1].value
-                #print(f"Constraint {i}: {lhs} <= {rhs}")
+                ##print(f"Constraint {i}: {lhs} <= {rhs}")
             except Exception as e:
                 print(f"Constraint {i} could not be evaluated: {e}")
-        print('11111111111111111111')
-    #print("Optimal value:", problem.value)
-    #print("Optimal u:", u.value)
-    print(problem.status)
+        #print('11111111111111111111')
+    ##print("Optimal value:", problem.value)
+    ##print("Optimal u:", u.value)
+    #print(problem.status)
     if problem.status == 'optimal':
         return (True,u.value)
     else:
@@ -285,10 +285,10 @@ def QP_solver(initial_state_CAV,initial_state_HDV,vehicles_list_this_lane,N,dt,v
             for vehicle in CAV_id_list:
                 control_signal[vehicle].control_list_append(u.value[i])
                 i += 1
-        print(f'{lane_now} 求解成功')
+        #print(f'{lane_now} 求解成功')
         return control_signal
     except:
-        print(f'{lane_now} 求解失败')
+        #print(f'{lane_now} 求解失败')
         return control_signal
         pass'''
 

@@ -57,7 +57,7 @@ class VehicleController(threading.Thread):
     def run(self):
 
         while self.running:
-            #print(f"{self.vehicle_id[0:3]} thread running")
+            ##print(f"{self.vehicle_id[0:3]} thread running")
 
             # 车流量计数
             # 获取车辆当前所在的 edge
@@ -82,7 +82,7 @@ class VehicleController(threading.Thread):
                 # 检查车辆是否仍然在仿真中
                 if Global_Vars.VehicleLib[self.vehicle_id].running == False:
                     traceback.print_exc()
-                    print(f"在第 {Global_Vars.step} 步，车辆 {self.vehicle_id} 不在场景中。")
+                    #print(f"在第 {Global_Vars.step} 步，车辆 {self.vehicle_id} 不在场景中。")
                     self.running = False
                     continue
 
@@ -93,7 +93,7 @@ class VehicleController(threading.Thread):
                 self.idm_acc = None
                 if self.front_info != None:
                     self.front_id,self.gap = self.front_info
-                    print(f"{self.vehicle_id}的前车是{self.front_id}")
+                    #print(f"{self.vehicle_id}的前车是{self.front_id}")
 
                 # 有前车的情况下，计算idm加速度
                 if self.front_info != None and Global_Vars.VehicleLib[self.vehicle_id].lane == Global_Vars.VehicleLib[self.front_id].lane:
@@ -128,24 +128,24 @@ class VehicleController(threading.Thread):
 
                         # 如果有idm控制量
                         if self.idm_acc != None:
-                            print(f"{self.vehicle_id} MPC控制量为：{self.mpc_acc}, IDM控制量为：{self.idm_acc}")
+                            #print(f"{self.vehicle_id} MPC控制量为：{self.mpc_acc}, IDM控制量为：{self.idm_acc}")
                             if self.mpc_acc != None:
                                 if self.mpc_acc < self.idm_acc:
                                     self.acc_control = self.mpc_acc
-                                    print(f"{self.vehicle_id} 施加MPC控制量为：{self.acc_control}")
+                                    #print(f"{self.vehicle_id} 施加MPC控制量为：{self.acc_control}")
                                     traci.vehicle.setColor(self.vehicle_id, (0, 0, 255)) # MPC = blue
                                 else:
                                     self.acc_control = self.idm_acc
-                                    print(f"{self.vehicle_id} 施加IDM控制量为：{self.acc_control}")
+                                    #print(f"{self.vehicle_id} 施加IDM控制量为：{self.acc_control}")
                                     traci.vehicle.setColor(self.vehicle_id, (255, 0, 0))  # IDM = red
                             else:
                                 self.acc_control = self.idm_acc
-                                print(f"{self.vehicle_id} 施加IDM控制量为：{self.acc_control}")
+                                #print(f"{self.vehicle_id} 施加IDM控制量为：{self.acc_control}")
                                 traci.vehicle.setColor(self.vehicle_id, (255, 0, 0))  # IDM = red
                         else:
                             # 如果没有idm控制量，则施加mpc控制量
                             self.acc_control = self.mpc_acc
-                            print(f"{self.vehicle_id} 施加MPC控制量为：{self.acc_control}")
+                            #print(f"{self.vehicle_id} 施加MPC控制量为：{self.acc_control}")
                             traci.vehicle.setColor(self.vehicle_id, (0, 0, 255))  # MPC =  blue
 
                         # 如果经过上述操作后，得到了一个加速度控制量
@@ -153,10 +153,10 @@ class VehicleController(threading.Thread):
                             traci.vehicle.setAcceleration(self.vehicle_id, self.acc_control, 1)
                         else:
                             traci.vehicle.setAcceleration(self.vehicle_id, 0.0, 1)
-                        print(f"{self.vehicle_id}已施加加速度控制量：{self.acc_control}")
+                        #print(f"{self.vehicle_id}已施加加速度控制量：{self.acc_control}")
             except:
                 traceback.print_exc()
-                print(f"{self.vehicle_id} 施加加速度控制量失败")         
+                #print(f"{self.vehicle_id} 施加加速度控制量失败")         
 
 
     def stop(self):

@@ -359,13 +359,13 @@ class TrafficLightController(threading.Thread):
 
             if Global_Vars.LightLib[self.Traffic_Signal_id].nowphase_index in [0,2,4,6] and self.agent.CheckOrNot is True and Global_Vars.LightLib[self.Traffic_Signal_id].remaining_time_common > Least_Check_Time:
                 traci.trafficlight.setPhaseDuration(self.Traffic_Signal_id, float(Action_list[self.agent.action]))
-                #print(f"Agent: {Traffic_Signal_id} 原:{temp_duration} 现在:{get_remaining_phase_time(Traffic_Signal_id)} ")
+                ###print(f"Agent: {Traffic_Signal_id} 原:{temp_duration} 现在:{get_remaining_phase_time(Traffic_Signal_id)} ")
                 self.agent.CheckOrNot = False
                 if self.agent.step%train_gap == 0 and self.agent.step>=train_batchsize and Train_Or_Not:
                     self.agent.train(train_batchsize)
                     self.agent.update_target_network()
                     torch.save(self.agent.q_network.state_dict(), f'models/{self.Traffic_Signal_id}_model.pth')
-                    print(f"Agent: {self.Traffic_Signal_id} Reward = {self.agent.reward_delta} Epsilon = {self.agent.epsilon} Trained_time = {self.agent.Trained_time}")
+                    ##print(f"Agent: {self.Traffic_Signal_id} Reward = {self.agent.reward_delta} Epsilon = {self.agent.epsilon} Trained_time = {self.agent.Trained_time}")
 
 
 

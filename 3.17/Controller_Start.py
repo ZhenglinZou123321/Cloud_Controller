@@ -2,7 +2,9 @@ import traci
 # Traci远程连接的设置
 traci.init(port = 14491,host="192.168.100.104")
 traci.setOrder(0) #设置优先级，数字越小，越高
-print('111')
+#print('111')
+
+import time
 import sumolib
 import threading
 import numpy as np
@@ -79,7 +81,7 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     for junc in Global_Vars.Intelligent_Sigal_List:
-        print(junc + "1111")
+        #print(junc + "1111")
         controller = TrafficLightController(junc,Global_Vars.traffic_light_to_lanes,Global_Vars.lane_index_dict,Global_Vars.lane_adj_matrix,Global_Vars.N,Global_Vars.dt,Global_Vars.L_safe,device=device)
         lightclass = Global_Vars.Light(junc)
         Global_Vars.LightLib[junc] = lightclass
@@ -87,17 +89,21 @@ if __name__ == '__main__':
 
         
     # 开始仿真
-    print("ready to start")
+    #print("ready to start")
 
     while traci.simulation.getMinExpectedNumber() > 0:
-        
+        start = time.time()
         Global_Vars.simulate_info.update()
-        print('step--1')
-        
+        #print('step--1')
+        #print(f"系统数据耗时: {time.time() - start:.6f}s")
         # 数据读取过程
 
         # 车辆线程创建与关闭  车辆数据读取
-        vehicle_ids = traci.vehicle.getIDList()
+        start = time.time()
+        if Global_Vars.step % 10 == 0:# 这样不行，会导致junction将这些车记录了，但是总的列表里并没有
+            vehicle_ids = traci.vehicle.getIDList()
+        # 想到一个办法，把所有junc的车集合在一起不就行了
+        #print(f"车辆id采集耗时: {time.time() - start:.6f}s")
         for vehicle_id in vehicle_ids:
             if vehicle_id not in Global_Vars.VehicleLib:
                 vehicleclass = Global_Vars.Vehicle(vehicle_id,vehicle_id[0:3])
@@ -110,25 +116,31 @@ if __name__ == '__main__':
                     controller = VehicleController(vehicle_id,Global_Vars.dt)
                     controller.start()
                     Global_Vars.vehicle_threads[vehicle_id] = controller
-                    print(f"Started thread for vehicle {vehicle_id}")
+                    #print(f"Started thread for vehicle {vehicle_id}")
                     continue
 
             Global_Vars.VehicleLib[vehicle_id].update()
 
-        print('step--2')
+        #print('step--2')
         for junc in Global_Vars.Intelligent_Sigal_List:
-            print(junc + 'Junc')
+            start = time.time()
+            #print(junc + 'Junc')
             Global_Vars.JuncLib[junc].update()  
-            print(junc + 'Light')
-            Global_Vars.LightLib[junc].update()      
+            #print(f"{junc} junc采集耗时: {time.time() - start:.6f}s")
+            start = time.time()
+            Global_Vars.LightLib[junc].update()   
+            #print(f"{junc} light采集耗时: {time.time() - start:.6f}s")   
 
-        print('step--3')
+        #print('step--3')
 
 
         # Step 仿真步的记录
         Global_Vars.step += 1
-        print(Global_Vars.step)
+        #print(Global_Vars.step)
         traci.simulationStep()
+
+
+        
 
 
 

@@ -71,7 +71,7 @@ class JunctionController(threading.Thread):
                     #target_speed = MAX_SPEED if is_green_light("j3") else 0
                     #optimized_speed, optimized_accel = optimize_speed(vehicle_id, target_speed, MAX_SPEED, MAX_ACCEL, REACTION_TIME)
             if len(initial_state_CAV) != 0:
-                print('2')
+                #print('2')
                 type_info = (type_list,num_CAV,num_HDV)
                 initial_state_CAV = np.array(initial_state_CAV)
                 initial_state_HDV = np.array(initial_state_HDV)
@@ -84,12 +84,12 @@ class JunctionController(threading.Thread):
                     for vehicle in CAV_id_list:
                         Global_Vars.vehicle_threads[vehicle].control_signal_new = u[i::num_CAV]
                         i += 1
-                print('3')
+                #print('3')
         end_time = time.time()
         elapsed_time = end_time - start_time
 
         '''with open(self.log_file,"a") as f:
-            print(f"{self.junction_id}  计算耗时: {elapsed_time:.4f} 秒")'''
+            #print(f"{self.junction_id}  计算耗时: {elapsed_time:.4f} 秒")'''
 
     def run(self):
         while self.running:
