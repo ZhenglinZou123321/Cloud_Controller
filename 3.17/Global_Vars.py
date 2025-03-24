@@ -154,6 +154,7 @@ class Vehicle():
             self.running = False
 
 JuncLib = {}
+Vehicle_IDs = set()
 class Junc():
     def __init__(self,id):
         self.id = id #
@@ -172,11 +173,13 @@ class Junc():
         # 这种频繁traci的过程很费时间
         '''self.vehicle_num = {laneID:traci.lane.getLastStepVehicleNumber(laneID) for laneID in self.lane_ids}
         self.vehicle_ids = {laneID:traci.lane.getLastStepVehicleIDs(laneID) for laneID in self.lane_ids}'''
-        subscription_results = {k:traci.lane.getSubscriptionResults(k) for k in self.lane_ids}
-        self.vehicle_num = {lane_id: subscription_results[lane_id][traci.constants.LAST_STEP_VEHICLE_NUMBER] 
-                           for lane_id in self.lane_ids}
-        self.vehicle_ids = {lane_id: subscription_results[lane_id][traci.constants.LAST_STEP_VEHICLE_ID_LIST] 
-                           for lane_id in self.lane_ids}
+        for lane_id in self.lane_ids:
+            subscription_results = {lane_id:traci.lane.getSubscriptionResults(lane_id)}
+            self.vehicle_num = {lane_id: subscription_results[lane_id][traci.constants.LAST_STEP_VEHICLE_NUMBER]}
+            self.vehicle_ids = {lane_id: subscription_results[lane_id][traci.constants.LAST_STEP_VEHICLE_ID_LIST]}
+            Vehicle_IDs.update(subscription_results[lane_id][traci.constants.LAST_STEP_VEHICLE_ID_LIST])
+        
+                            
 
 LightLib = {}
 class Light():
