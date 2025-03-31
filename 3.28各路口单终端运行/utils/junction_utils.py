@@ -53,8 +53,8 @@ class JunctionController():
             for vehicle_id in vehicles_list_this_lane:
 
                 if vehicle_id[0:3] == "CAV":
-                    Global_Vars.vehicle_threads[vehicle_id].time_when_cal = now_time
-                    Global_Vars.vehicle_threads[vehicle_id].control_signal_new = []
+                    Global_Vars.VehicleLib[vehicle_id].time_when_cal = now_time
+                    Global_Vars.VehicleLib[vehicle_id].control_signal_new = []
                     num_CAV +=1
                     type_list.append('CAV')
                     state = [Global_Vars.VehicleLib[vehicle_id].laneposition, Global_Vars.VehicleLib[vehicle_id].speed]
@@ -81,14 +81,10 @@ class JunctionController():
                 if solve_status:
                     i = 0 
                     for vehicle in CAV_id_list:
-                        Global_Vars.vehicle_threads[vehicle].control_signal_new = u[i::num_CAV]
+                        Global_Vars.VehicleLib[vehicle].control_signal_new = u[i::num_CAV]
                         i += 1
                 #print('3')
         end_time = time.time()
-        elapsed_time = end_time - start_time
-
-        '''with open(self.log_file,"a") as f:
-            #print(f"{self.junction_id}  计算耗时: {elapsed_time:.4f} 秒")'''
 
     def run(self):
         self.get_last_quarter_every_lane()
