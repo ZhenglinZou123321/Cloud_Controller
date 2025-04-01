@@ -15,6 +15,10 @@ class Sim_info():
     def update(self):
         self.now_time += self.step
 
+    def Conv_from_dict(self,dict):
+        self.now_time = dict['now_time']
+        self.step = dict['step']
+
 simulate_info = Sim_info()
 
 def get_remaining_phase_and_time(lane_id): #获取信号灯当前相位和剩余时间
@@ -168,6 +172,13 @@ class Vehicle():
             traci.vehicle.setAcceleration(self.id, acc)
         else:
             print(f"{self.id} 速度施加失败")
+    def Conv_from_dict(self, dict):
+        self.speed = dict['speed']
+        self.lane = dict['lane']
+        self.leader = dict['leader']
+        self.laneposition = dict['laneposition']
+        self.RoadID = dict['RoadID']
+
 
 JuncLib = {}
 Vehicle_IDs = set()
@@ -202,6 +213,11 @@ class Junc():
             for vehicle_id in self.vehicle_ids[laneID]:
                 if vehicle_id[0:3] == 'CAV':
                     VehicleLib[vehicle_id].acceleration_control(simulate_info.now_time,dt)
+
+    def Conv_from_dict(self, dict):
+        self.vehicle_num = dict['vehicle_num']
+        self.lanes_length = dict['lanes_length']
+        self.vehicle_ids = dict['vehicle_ids']
 
 
 LightLib = {}
@@ -244,3 +260,8 @@ class Light():
         self.next_phase_state = self.completeRedYellowGreenDefinition[0].phases[(self.nowphase_index + 1) % 8].state
         self.next_3_phase_state = self.completeRedYellowGreenDefinition[0].phases[(self.nowphase_index + 3) % 8].state
 
+    def Conv_from_dict(self, dict):
+        self.phase = dict['phase']
+        self.remaining_time = dict['remaining_time']
+        self.nextphase = dict['nextphase']
+        self.remaining_time_common = dict['remaining_time_common']

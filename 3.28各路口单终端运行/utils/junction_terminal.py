@@ -17,26 +17,28 @@ def junction_run(id):
             print("未能从redis读取Vehicle_IDs")
 
         try:
-            Global_Vars.VehicleLib = msgpack.unpackb(r.get("VehicleLib"), raw=False)   
+            VehicleLib_dict = msgpack.unpackb(r.get("VehicleLib"), raw=False)
+            for key in VehicleLib_dict.keys():
+                Global_Vars.VehicleLib[key].Conv_from_dict(VehicleLib_dict[key])
         except: 
             print("未能从redis读取VehicleLib")
 
         try:
-            Global_Vars.JuncLib = r.get("JuncLib")
-            Global_Vars.JuncLib = msgpack.unpackb(Global_Vars.JuncLib, raw=False)
-
+            JuncLib_dict = msgpack.unpackb(r.get("JuncLib"), raw=False)
+            for key in JuncLib_dict.keys():
+                Global_Vars.JuncLib[key].Conv_from_dict(JuncLib_dict[key])
         except:
             print("未能从redis读取JuncLib")
         
-        try:
-            Global_Vars.LightLib = r.get("LightLib")
-            Global_Vars.LightLib = msgpack.unpackb(Global_Vars.LightLib, raw=False)
+        try: 
+            LightLib_dict = msgpack.unpackb(r.get("LightLib"), raw=False)
+            for key in LightLib_dict.keys():
+                Global_Vars.LightLib[key].Conv_from_dict(LightLib_dict[key])
         except:
             print("未能从redis读取LightLib")
 
         try:
-            Global_Vars.simulate_info = r.get("simulate_info")
-            Global_Vars.simulate_info = msgpack.unpackb(Global_Vars.simulate_info, raw=False)
+            Global_Vars.simulate_info.Conv_from_dict(msgpack.unpackb(r.get("simulate_info"), raw=False))
         except:
             print("未能从redis读取simulate_info")
 
@@ -45,8 +47,8 @@ def junction_run(id):
         if Global_Vars.step % 5 == 0:
             junc_controller.run()
         
-        Global_Vars.JuncLib[id] = msgpack.packb(Global_Vars.JuncLib[id], use_bin_type=True)
-        r.hset("JuncLib",id,Global_Vars.JuncLib[id])
+        JuncLib_dict[id] = msgpack.packb(Global_Vars.JuncLib[id].__dict__, use_bin_type=True)
+        r.hset("JuncLib",id,JuncLib_dict[id])
 
         r.hset("Vehicle_IDs",msgpack.packb(Global_Vars.Vehicle_IDs, use_bin_type=True))
 

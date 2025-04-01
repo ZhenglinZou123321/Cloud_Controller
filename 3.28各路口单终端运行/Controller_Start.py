@@ -43,36 +43,48 @@ if __name__ == '__main__':
         Global_Vars.JuncLib[junc] = juncclass
         controller.start()
 
-    lights_packed = msgpack.packb(Global_Vars.LightLib, use_bin_type=True)
-    r.set("LightLib",lights_packed)
+    '''lights_packed = msgpack.packb(Global_Vars.LightLib, use_bin_type=True)
+    r.set("LightLib",lights_packed)'''
     
-    juncs_packed = msgpack.packb(Global_Vars.JuncLib, use_bin_type=True)
-    r.set("JuncLib",juncs_packed)
+    '''juncs_packed = msgpack.packb(Global_Vars.JuncLib, use_bin_type=True)
+    r.set("JuncLib",juncs_packed)'''
 
     print(Global_Vars.LightLib)
+    LightLib_dict = {}
+    VehicleLib_dict = {}
 
     while traci.simulation.getMinExpectedNumber() > 0:
 
         Global_Vars.simulate_info.update()
-        simulate_info_packed = msgpack.packb(Global_Vars.simulate_info, use_bin_type=True)
+        simulate_info_packed = msgpack.packb(Global_Vars.simulate_info.__dict__, use_bin_type=True)
         r.set("simulate_info",simulate_info_packed)
 
+        try:
+            JuncLib_dict = msgpack.unpackb(r.get("JuncLib"), raw=False)
+            for key in JuncLib_dict.keys():
+                Global_Vars.JuncLib[key].Conv_from_dict(JuncLib_dict[key])
+        except:
+            print("未能从redis读取JuncLib")
+
         for junc in Global_Vars.Intelligent_Sigal_List:
-            Global_Vars.LightLib[junc].update()   
-        lights_packed = msgpack.packb(Global_Vars.LightLib.__dict__, use_bin_type=True)
+            Global_Vars.LightLib[junc].update()
+            LightLib_dict[junc] = Global_Vars.LightLib[junc].__dict__  
+        lights_packed = msgpack.packb(LightLib_dict, use_bin_type=True)
         r.set("LightLib",lights_packed)
 
         try:
             Global_Vars.Vehicle_IDs = msgpack.unpackb(r.get("Vehicle_IDs"), raw=False)
         except:
             print("未能从redis读取Vehicle_IDs")
+
         for vehicle_id in Global_Vars.Vehicle_IDs:
             if vehicle_id not in Global_Vars.VehicleLib:
                 vehicleclass = Global_Vars.Vehicle(vehicle_id,vehicle_id[0:3])
                 Global_Vars.VehicleLib[vehicle_id] = vehicleclass
             Global_Vars.VehicleLib[vehicle_id].update()
+            VehicleLib_dict[vehicle_id] = Global_Vars.VehicleLib[vehicle_id].__dict__
 
-        VehicleLib_packed = msgpack.packb(Global_Vars.VehicleLib.__dict__, use_bin_type=True)
+        VehicleLib_packed = msgpack.packb(VehicleLib_dict, use_bin_type=True)
         r.set("VehicleLib",VehicleLib_packed)
 
         Global_Vars.step += 1
