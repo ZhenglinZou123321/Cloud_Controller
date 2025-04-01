@@ -133,15 +133,19 @@ def get_state(intersection_id,lane_index_dict,lane_adj):
             to_list = np.nonzero(lane_adj[lane_index])[0] #这个lane要去的lane的索引
             from_list = np.nonzero(lane_adj[:, lane_index])[0]#来这个lane的索引
             next_state_of_last.extend([dentisy_self])
+
+            # 这里需要做改动，因为以前，一个路口可以查找到进、出这个路口的所有车道
+            # 但是现在，一个路口只能查找到进这个路口的车道
             for one_lane in to_list:
                 if match_strings(Global_Vars.reversed_lane_dict[str(one_lane)][:-2],lane[:-2]):
                     continue
                 one_lane = Global_Vars.reversed_lane_dict[str(one_lane)]
-                vehicle_ids = Global_Vars.JuncLib[intersection_id].vehicle_ids[one_lane]
+                intersection_to = one_lane.split('t')[1].split('_')[0]
+                vehicle_ids = Global_Vars.JuncLib[intersection_to].vehicle_ids[one_lane]
                 vehicle_occupancy_length = sum(Global_Vars.VehicleLib[vehicle_id].length for vehicle_id in vehicle_ids)
                 dentisy_to = vehicle_occupancy_length/Global_Vars.Lanes_length[one_lane]
-                signal_index = traffic_signal_dict[Global_Vars.LightLib[intersection_id].phase[one_lane]]#get_lane_state(one_lane, lane_index_dict, lane_adj)
-                remain_time = Global_Vars.LightLib[intersection_id].remaining_time[one_lane]
+                signal_index = traffic_signal_dict[Global_Vars.LightLib[intersection_to].phase[one_lane]]#get_lane_state(one_lane, lane_index_dict, lane_adj)
+                remain_time = Global_Vars.LightLib[intersection_to].remaining_time[one_lane]
                 next_state_of_last.extend([dentisy_to,signal_index,remain_time])
 
             from_temp = []
@@ -149,11 +153,12 @@ def get_state(intersection_id,lane_index_dict,lane_adj):
                 if match_strings(Global_Vars.reversed_lane_dict[str(one_lane)][:-2],lane[:-2]):
                     continue
                 one_lane = Global_Vars.reversed_lane_dict[str(one_lane)]
-                vehicle_ids = Global_Vars.JuncLib[intersection_id].vehicle_ids[one_lane]
+                intersection_from = one_lane.split('t')[1].split('_')[0]
+                vehicle_ids = Global_Vars.JuncLib[intersection_from].vehicle_ids[one_lane]
                 vehicle_occupancy_length = sum(Global_Vars.VehicleLib[vehicle_id].length for vehicle_id in vehicle_ids)
                 dentisy_from = vehicle_occupancy_length/Global_Vars.Lanes_length[one_lane]
-                signal_index = traffic_signal_dict[Global_Vars.LightLib[intersection_id].phase[one_lane]]#get_lane_state(one_lane, lane_index_dict, lane_adj)
-                remain_time = Global_Vars.LightLib[intersection_id].remaining_time[one_lane]
+                signal_index = traffic_signal_dict[Global_Vars.LightLib[intersection_from].phase[one_lane]]#get_lane_state(one_lane, lane_index_dict, lane_adj)
+                remain_time = Global_Vars.LightLib[intersection_from].remaining_time[one_lane]
                 from_temp.extend([dentisy_from, signal_index, remain_time])
             from_temp += [0] * (3 * 3 - len(from_temp))
             next_state_of_last.extend(from_temp)

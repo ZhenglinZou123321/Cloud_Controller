@@ -169,7 +169,8 @@ class Vehicle():
     def acceleration_control(self,time_now,dt):
         acc = self.get_control_signal(time_now, dt)
         if acc != None:
-            traci.vehicle.setAcceleration(self.id, acc)
+            traci.vehicle.setAcceleration(self.id, acc, dt)
+            print(f"{self.id} 速度施加成功")
         else:
             print(f"{self.id} 速度施加失败")
     def Conv_from_dict(self, dict):
@@ -178,6 +179,14 @@ class Vehicle():
         self.leader = dict['leader']
         self.laneposition = dict['laneposition']
         self.RoadID = dict['RoadID']
+    def Conv_to_dict(self):
+        return {
+            'speed': self.speed,
+            'lane': self.lane,
+            'leader': self.leader,
+            'laneposition': self.laneposition,
+            'RoadID': self.RoadID
+        }
 
 
 JuncLib = {}
@@ -212,12 +221,19 @@ class Junc():
         for laneID in self.lane_ids:
             for vehicle_id in self.vehicle_ids[laneID]:
                 if vehicle_id[0:3] == 'CAV':
+                    #print(simulate_info.now_time)
                     VehicleLib[vehicle_id].acceleration_control(simulate_info.now_time,dt)
 
     def Conv_from_dict(self, dict):
         self.vehicle_num = dict['vehicle_num']
         self.lanes_length = dict['lanes_length']
         self.vehicle_ids = dict['vehicle_ids']
+    def Conv_to_dict(self):
+        return {
+            'vehicle_num': self.vehicle_num,
+            'lanes_length': self.lanes_length,
+            'vehicle_ids': self.vehicle_ids
+        }
 
 
 LightLib = {}
@@ -265,3 +281,10 @@ class Light():
         self.remaining_time = dict['remaining_time']
         self.nextphase = dict['nextphase']
         self.remaining_time_common = dict['remaining_time_common']
+    def Conv_to_dict(self):
+        return {
+            'phase': self.phase,
+            'remaining_time': self.remaining_time,
+            'nextphase': self.nextphase,
+            'remaining_time_common': self.remaining_time_common
+        }

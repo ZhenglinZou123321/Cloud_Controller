@@ -17,15 +17,6 @@ import sys
 import pandas as pd
 import Global_Vars
 
-
-
-
-
-
-
-
-
-
 def construct_block_diagonal_matrix(alpha, N):
     # alpha 是一个 3x2 的矩阵
     rows_a, cols_a = alpha.shape  # 获取 alpha 的形状
@@ -258,7 +249,7 @@ def QP_solver(initial_state_CAV,initial_state_HDV,vehicles_list_this_lane,N,dt,v
     problem.solve(solver=cp.GUROBI,reoptimize=True)
 
     # 输出结果
-    ##print("Solver status:", problem.status)
+    print("Solver status:", problem.status)
     if problem.status == 'infeasible':
         for i, constraint in enumerate(constraints):
             try:

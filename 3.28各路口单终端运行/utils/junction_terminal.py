@@ -5,30 +5,54 @@ import redis
 r = redis.Redis(host='192.168.100.21', port=6379, db=0)
 
 def junction_run(id):
+    for junc in Global_Vars.Intelligent_Sigal_List:
+        lightclass = Global_Vars.Light(junc)
+        juncclass = Global_Vars.Junc(junc)
+        Global_Vars.LightLib[junc] = lightclass
+        Global_Vars.JuncLib[junc] = juncclass
     id = id
-    juncclass = Global_Vars.Junc(id)
-    Global_Vars.JuncLib[id] = juncclass
     junc_controller = JunctionController(id,Global_Vars.traffic_light_to_lanes,Global_Vars.N,Global_Vars.dt,Global_Vars.L_safe)
     Global_Vars.junction_threads[id]= junc_controller
+    JuncLib_dict = {}
     while traci.simulation.getMinExpectedNumber() > 0:
         try:
-            Global_Vars.Vehicle_IDs = msgpack.unpackb(r.get("Vehicle_IDs"), raw=False)   
+            Global_Vars.Vehicle_IDs = set(msgpack.unpackb(r.get("Vehicle_IDs"), raw=False))   
         except: 
             print("未能从redis读取Vehicle_IDs")
 
         try:
             VehicleLib_dict = msgpack.unpackb(r.get("VehicleLib"), raw=False)
             for key in VehicleLib_dict.keys():
+                if key not in Global_Vars.VehicleLib.keys():
+                    Global_Vars.VehicleLib[key] = Global_Vars.Vehicle(key,key[0:3])
                 Global_Vars.VehicleLib[key].Conv_from_dict(VehicleLib_dict[key])
         except: 
             print("未能从redis读取VehicleLib")
 
         try:
-            JuncLib_dict = msgpack.unpackb(r.get("JuncLib"), raw=False)
+            JuncLib_dict = r.hgetall("JuncLib")
             for key in JuncLib_dict.keys():
-                Global_Vars.JuncLib[key].Conv_from_dict(JuncLib_dict[key])
-        except:
-            print("未能从redis读取JuncLib")
+                try:
+                    # 将键从字节类型解码为字符串类型
+                    key_str = key.decode()
+                    try:
+                        # 对哈希表中键对应的值进行 msgpack 反序列化
+                        unpacked_value = msgpack.unpackb(JuncLib_dict[key], raw=False)
+                        # 调用对象的方法将反序列化后的数据进行转换
+                        Global_Vars.JuncLib[key_str].Conv_from_dict(unpacked_value)
+                    except msgpack.UnpackException as e:
+                        print(f"对键 {key_str} 对应的值进行 msgpack 反序列化时出错: {e}")
+                    except AttributeError as e:
+                        print(f"在调用 Global_Vars.JuncLib[{key_str}].Conv_from_dict 方法时出错: {e}")
+                    except KeyError as e:
+                        print(f"Global_Vars.JuncLib 中不存在键 {key_str}: {e}")
+                except UnicodeDecodeError as e:
+                    print(f"对键 {key} 进行解码时出错: {e}")
+        except redis.exceptions.RedisError as e:
+            print(f"从 Redis 获取 JuncLib 时出现 Redis 错误: {e}")
+        except Exception as e:
+            print(f"出现未知错误: {e}")
+
         
         try: 
             LightLib_dict = msgpack.unpackb(r.get("LightLib"), raw=False)
@@ -47,10 +71,10 @@ def junction_run(id):
         if Global_Vars.step % 5 == 0:
             junc_controller.run()
         
-        JuncLib_dict[id] = msgpack.packb(Global_Vars.JuncLib[id].__dict__, use_bin_type=True)
+        JuncLib_dict[id] = msgpack.packb(Global_Vars.JuncLib[id].Conv_to_dict() , use_bin_type=True)
         r.hset("JuncLib",id,JuncLib_dict[id])
 
-        r.hset("Vehicle_IDs",msgpack.packb(Global_Vars.Vehicle_IDs, use_bin_type=True))
+        r.set("Vehicle_IDs",msgpack.packb(list(Global_Vars.Vehicle_IDs), use_bin_type=True))
 
         traci.simulationStep()
 

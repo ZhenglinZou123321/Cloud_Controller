@@ -19,6 +19,7 @@ import Global_Vars
 import msgpack
 import redis
 r = redis.Redis(host='192.168.100.21', port=6379, db=0)
+r.flushdb()
 
 # 获取当前脚本所在的目录
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -59,21 +60,25 @@ if __name__ == '__main__':
         simulate_info_packed = msgpack.packb(Global_Vars.simulate_info.__dict__, use_bin_type=True)
         r.set("simulate_info",simulate_info_packed)
 
-        try:
-            JuncLib_dict = msgpack.unpackb(r.get("JuncLib"), raw=False)
+        try:# 在junction_terminal中，用了hash的形式存储junc，因此JuncLib是hash类型的。
+            # hash类型就允许我们在数据库里单独取这个字典中的某一项进行读写
+            JuncLib_dict = r.hgetall("JuncLib")
             for key in JuncLib_dict.keys():
-                Global_Vars.JuncLib[key].Conv_from_dict(JuncLib_dict[key])
+                key_str = key.decode()
+                Global_Vars.JuncLib[key_str].Conv_from_dict(msgpack.unpackb(JuncLib_dict[key], raw=False))
         except:
             print("未能从redis读取JuncLib")
 
+        # 对于LightLib，是将整个字典变成字符串形式存储的，所以是string形式
+        # 不能够单独对其中某一项进行读写，只能将其全部下载下来，再全部上传来更新
         for junc in Global_Vars.Intelligent_Sigal_List:
             Global_Vars.LightLib[junc].update()
-            LightLib_dict[junc] = Global_Vars.LightLib[junc].__dict__  
+            LightLib_dict[junc] = Global_Vars.LightLib[junc].Conv_to_dict()  
         lights_packed = msgpack.packb(LightLib_dict, use_bin_type=True)
         r.set("LightLib",lights_packed)
 
         try:
-            Global_Vars.Vehicle_IDs = msgpack.unpackb(r.get("Vehicle_IDs"), raw=False)
+            Global_Vars.Vehicle_IDs = set(msgpack.unpackb(r.get("Vehicle_IDs"), raw=False))
         except:
             print("未能从redis读取Vehicle_IDs")
 
@@ -82,7 +87,7 @@ if __name__ == '__main__':
                 vehicleclass = Global_Vars.Vehicle(vehicle_id,vehicle_id[0:3])
                 Global_Vars.VehicleLib[vehicle_id] = vehicleclass
             Global_Vars.VehicleLib[vehicle_id].update()
-            VehicleLib_dict[vehicle_id] = Global_Vars.VehicleLib[vehicle_id].__dict__
+            VehicleLib_dict[vehicle_id] = Global_Vars.VehicleLib[vehicle_id].Conv_to_dict() 
 
         VehicleLib_packed = msgpack.packb(VehicleLib_dict, use_bin_type=True)
         r.set("VehicleLib",VehicleLib_packed)

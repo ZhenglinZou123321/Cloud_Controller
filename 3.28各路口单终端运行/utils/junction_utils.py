@@ -77,11 +77,11 @@ class JunctionController():
 
                 #mpc_control(initial_state, 0, weights=[1.0,0.5], N=20, dt=dt, bounds=(MIN_ACCEL,MAX_ACCEL,0,MAX_SPEED),type_info=type_info,now_lane = lane_id,lane_towards = lane_towards,last_quarter_vehicles=last_quarter_vehicles)
                 solve_status,u = QP_solver(initial_state_CAV, initial_state_HDV, vehicles_list_this_lane, Global_Vars.N, Global_Vars.dt, v_max=Global_Vars.MAX_SPEED, v_min=Global_Vars.MIN_SPEED, a_max=Global_Vars.MAX_ACCEL,a_min=Global_Vars.MIN_ACCEL, L_safe=Global_Vars.L_safe, lane_now=lane_id, CAV_id_list=CAV_id_list, HDV_id_list=HDV_id_list,intersection_id=self.junction_id)
-
+                
                 if solve_status:
                     i = 0 
                     for vehicle in CAV_id_list:
-                        Global_Vars.VehicleLib[vehicle].control_signal_new = u[i::num_CAV]
+                        Global_Vars.VehicleLib[vehicle].control_signal = u[i::num_CAV]
                         i += 1
                 #print('3')
         end_time = time.time()
