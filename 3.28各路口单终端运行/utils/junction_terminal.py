@@ -68,7 +68,7 @@ def junction_run(id):
 
         Global_Vars.JuncLib[id].update()
         Global_Vars.JuncLib[id].Vehicle_Control()  
-        if Global_Vars.step % 5 == 0:
+        if Global_Vars.step % 10 == 0:
             junc_controller.run()
         
         JuncLib_dict[id] = msgpack.packb(Global_Vars.JuncLib[id].Conv_to_dict() , use_bin_type=True)

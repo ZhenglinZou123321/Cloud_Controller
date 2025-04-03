@@ -5,6 +5,7 @@ import json
 import pandas as pd
 import traci
 import traci.constants
+import numpy as np
 
 
 class Sim_info():
@@ -62,7 +63,7 @@ V_0 = MAX_SPEED  # 期望速度 (m/s)，可根据实际情况调整
 T = 1.5  # 期望车头时距 (s)，可根据实际情况调整
 a_max = MAX_ACCEL  # 最大加速度 (m/s²)，与前面已定义的保持一致或按需调整
 b = -1*MIN_ACCEL  # 舒适制动减速度 (m/s²)，可根据实际情况调整
-s_0 = 2  # 最小间距 (m)，可根据实际情况调整
+s_0 = 1  # 最小间距 (m)，可根据实际情况调整
 delta = 4  # 速度影响指数参数，可根据实际情况调整
 
 
@@ -154,7 +155,7 @@ class Vehicle():
                 return
             self.speed = subscription_results[traci.constants.VAR_SPEED]
             self.lane = subscription_results[traci.constants.VAR_LANE_ID]
-            self.leader = subscription_results[traci.constants.VAR_LEADER]
+            self.leader = subscription_results[traci.constants.VAR_LEADER]# 元组(vehicle_id,idstance)
             self.laneposition = subscription_results[traci.constants.VAR_LANEPOSITION]
             self.RoadID = subscription_results[traci.constants.VAR_ROAD_ID]
         except:
@@ -165,13 +166,43 @@ class Vehicle():
             return self.control_signal[int((time_now-self.time_when_cal)/dt)]
         else:
             return None
+    def idm_acceleration(self, current_speed, front_vehicle_speed, gap,  front_vehicle_id=None):
+        """
+        根据IDM模型计算车辆的加速度。
+
+        参数:
+        current_speed (float): 当前车辆速度 (m/s)
+        front_vehicle_speed (float): 前车速度 (m/s)
+        gap (float): 当前车与前车的间距 (m)
+        front_vehicle_id (str, 可选): 前车的ID，用于调试或其他可能的拓展需求，默认为None
+
+        返回:
+        float: 根据IDM模型计算出的当前车辆加速度 (m/s²)
+        """
+        
+        relative_speed = current_speed - front_vehicle_speed
+        s_star = s_0 + current_speed * T + (current_speed * relative_speed) / (2 * np.sqrt(a_max * b))
+        acceleration = a_max * (1 - (current_speed / V_0) ** delta - (s_star / gap) ** 2)
+        return min(max(acceleration,MIN_ACCEL), MAX_ACCEL)
     
     def acceleration_control(self,time_now,dt):
-        acc = self.get_control_signal(time_now, dt)
-        if acc != None:
+        mpc_acc = self.get_control_signal(time_now, dt)
+        if self.leader != None:
+            idm_acc = self.idm_acceleration(self.speed, VehicleLib[self.leader[0]].speed, self.leader[1], front_vehicle_id=None)
+        else:
+            idm_acc = 99
+        if mpc_acc != None and idm_acc != None:
+            acc = min(mpc_acc,idm_acc)
+            if acc == mpc_acc:
+                traci.vehicle.setColor(self.id, (0, 0, 255)) # MPC = blue
+            else:
+                traci.vehicle.setColor(self.id, (255, 0, 0)) # IDM = red
+
+            traci.vehicle.setSpeedMode(self.id, 0000000)  # 关闭跟驰模型
             traci.vehicle.setAcceleration(self.id, acc, dt)
             print(f"{self.id} 速度施加成功")
         else:
+            traci.vehicle.setSpeedMode(self.id, 31)
             print(f"{self.id} 速度施加失败")
     def Conv_from_dict(self, dict):
         self.speed = dict['speed']

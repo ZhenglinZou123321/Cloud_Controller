@@ -30,6 +30,21 @@ with open('traffic_data_gaussian.csv', mode='w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(['time', 'road_id', 'vehicle_count', 'average_speed'])
 
+lane_keys = Global_Vars.lane_index_dict.keys()
+
+lane_keys = [i for i in lane_keys if not i.startswith(":")]
+
+lane_statistic = {}
+lane_count = {}
+lane_average_speed = {}
+for lane_key in lane_keys:
+    lane_statistic[lane_key]={}
+    lane_count[lane_key] = 0
+    lane_average_speed[lane_key] = 0
+
+# per time
+# lane_statistic[lane_key][time]={'vehicle_count':0,'average_speed':0}
+
 
 if __name__ == '__main__':
 
@@ -87,10 +102,28 @@ if __name__ == '__main__':
                 vehicleclass = Global_Vars.Vehicle(vehicle_id,vehicle_id[0:3])
                 Global_Vars.VehicleLib[vehicle_id] = vehicleclass
             Global_Vars.VehicleLib[vehicle_id].update()
+            if Global_Vars.VehicleLib[vehicle_id].lane[0:1] == ':':
+                continue
+            lane_average_speed[Global_Vars.VehicleLib[vehicle_id].lane] = (lane_average_speed[Global_Vars.VehicleLib[vehicle_id].lane]*lane_count[Global_Vars.VehicleLib[vehicle_id].lane] + Global_Vars.VehicleLib[vehicle_id].speed)/(lane_count[Global_Vars.VehicleLib[vehicle_id].lane]+1)
+            lane_count[Global_Vars.VehicleLib[vehicle_id].lane] += 1
             VehicleLib_dict[vehicle_id] = Global_Vars.VehicleLib[vehicle_id].Conv_to_dict() 
 
         VehicleLib_packed = msgpack.packb(VehicleLib_dict, use_bin_type=True)
         r.set("VehicleLib",VehicleLib_packed)
+
+        if Global_Vars.step % 25 == 0:
+            # 写入CSV文件
+            with open('traffic_data_gaussian.csv', mode='a', newline='') as file:
+                writer = csv.writer(file)
+                for lane_key in lane_keys:
+                    lane_statistic[lane_key][Global_Vars.step]={'vehicle_count':lane_count[lane_key],'average_speed':lane_average_speed[lane_key]}
+                    lane_count[lane_key] = 0
+                    lane_average_speed[lane_key] = 0
+                    for sstep in lane_statistic[lane_key].keys():
+                        writer.writerow([sstep, lane_key, lane_statistic[lane_key][sstep]['vehicle_count'], lane_statistic[lane_key][sstep]['average_speed']])
+                    lane_statistic[lane_key]={}
+            # per time
+            # lane_statistic[lane_key][time]={'vehicle_count':0,'average_speed':0}
 
         Global_Vars.step += 1
         traci.simulationStep()
