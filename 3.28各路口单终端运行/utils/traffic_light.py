@@ -36,7 +36,7 @@ train_batchsize = 32
 def merge_and_save_memory(agent_list, file_path):
     merged_memory = []
 
-    for agent in agent_list.values():  # 遍历每个智能体
+    for agent in agent_list:  # 遍历每个智能体
         for experience in agent.memory:
             state, action, reward, next_state = experience
             merged_memory.append({

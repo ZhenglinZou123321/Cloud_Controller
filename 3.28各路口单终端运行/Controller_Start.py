@@ -26,6 +26,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 # 创建交通数据记录表
+Record_Gap = 600/Global_Vars.dt
 with open('traffic_data_gaussian.csv', mode='w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(['time', 'road_id', 'vehicle_count', 'average_speed'])
@@ -45,6 +46,7 @@ for lane_key in lane_keys:
 # per time
 # lane_statistic[lane_key][time]={'vehicle_count':0,'average_speed':0}
 
+Light_threads = []
 
 if __name__ == '__main__':
 
@@ -58,6 +60,7 @@ if __name__ == '__main__':
         Global_Vars.LightLib[junc] = lightclass
         Global_Vars.JuncLib[junc] = juncclass
         controller.start()
+        Light_threads.append(controller)
 
     '''lights_packed = msgpack.packb(Global_Vars.LightLib, use_bin_type=True)
     r.set("LightLib",lights_packed)'''
@@ -102,16 +105,18 @@ if __name__ == '__main__':
                 vehicleclass = Global_Vars.Vehicle(vehicle_id,vehicle_id[0:3])
                 Global_Vars.VehicleLib[vehicle_id] = vehicleclass
             Global_Vars.VehicleLib[vehicle_id].update()
-            if Global_Vars.VehicleLib[vehicle_id].lane[0:1] == ':':
-                continue
-            lane_average_speed[Global_Vars.VehicleLib[vehicle_id].lane] = (lane_average_speed[Global_Vars.VehicleLib[vehicle_id].lane]*lane_count[Global_Vars.VehicleLib[vehicle_id].lane] + Global_Vars.VehicleLib[vehicle_id].speed)/(lane_count[Global_Vars.VehicleLib[vehicle_id].lane]+1)
-            lane_count[Global_Vars.VehicleLib[vehicle_id].lane] += 1
             VehicleLib_dict[vehicle_id] = Global_Vars.VehicleLib[vehicle_id].Conv_to_dict() 
+            if Global_Vars.step % Record_Gap == 0:
+                if Global_Vars.VehicleLib[vehicle_id].lane[0:1] == ':':
+                    continue
+                lane_average_speed[Global_Vars.VehicleLib[vehicle_id].lane] = (lane_average_speed[Global_Vars.VehicleLib[vehicle_id].lane]*lane_count[Global_Vars.VehicleLib[vehicle_id].lane] + Global_Vars.VehicleLib[vehicle_id].speed)/(lane_count[Global_Vars.VehicleLib[vehicle_id].lane]+1)
+                lane_count[Global_Vars.VehicleLib[vehicle_id].lane] += 1
+            
 
         VehicleLib_packed = msgpack.packb(VehicleLib_dict, use_bin_type=True)
         r.set("VehicleLib",VehicleLib_packed)
 
-        if Global_Vars.step % 25 == 0:
+        if Global_Vars.step % Record_Gap == 0:
             # 写入CSV文件
             with open('traffic_data_gaussian.csv', mode='a', newline='') as file:
                 writer = csv.writer(file)
@@ -124,6 +129,7 @@ if __name__ == '__main__':
                     lane_statistic[lane_key]={}
             # per time
             # lane_statistic[lane_key][time]={'vehicle_count':0,'average_speed':0}
+            merge_and_save_memory([Light_threads[i].agent for i in range(len(Global_Vars.Intelligent_Sigal_List))],'datas.json')
 
         Global_Vars.step += 1
         traci.simulationStep()
