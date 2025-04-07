@@ -100,18 +100,26 @@ if __name__ == '__main__':
         except:
             print("未能从redis读取Vehicle_IDs")
 
+        to_remove = set()
         for vehicle_id in Global_Vars.Vehicle_IDs:
             if vehicle_id not in Global_Vars.VehicleLib:
                 vehicleclass = Global_Vars.Vehicle(vehicle_id,vehicle_id[0:3])
                 Global_Vars.VehicleLib[vehicle_id] = vehicleclass
             Global_Vars.VehicleLib[vehicle_id].update()
+            if Global_Vars.VehicleLib[vehicle_id].running == False:
+                to_remove.add(vehicle_id)
+                del Global_Vars.VehicleLib[vehicle_id]
+                continue
+            
             VehicleLib_dict[vehicle_id] = Global_Vars.VehicleLib[vehicle_id].Conv_to_dict() 
             if Global_Vars.step % Record_Gap == 0:
                 if Global_Vars.VehicleLib[vehicle_id].lane[0:1] == ':':
                     continue
                 lane_average_speed[Global_Vars.VehicleLib[vehicle_id].lane] = (lane_average_speed[Global_Vars.VehicleLib[vehicle_id].lane]*lane_count[Global_Vars.VehicleLib[vehicle_id].lane] + Global_Vars.VehicleLib[vehicle_id].speed)/(lane_count[Global_Vars.VehicleLib[vehicle_id].lane]+1)
                 lane_count[Global_Vars.VehicleLib[vehicle_id].lane] += 1
-            
+        Global_Vars.Vehicle_IDs -= to_remove   
+         
+        r.set("Vehicle_IDs",msgpack.packb(list(Global_Vars.Vehicle_IDs), use_bin_type=True))
 
         VehicleLib_packed = msgpack.packb(VehicleLib_dict, use_bin_type=True)
         r.set("VehicleLib",VehicleLib_packed)

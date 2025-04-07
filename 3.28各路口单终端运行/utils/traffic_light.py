@@ -22,6 +22,8 @@ shared_model = True
 shared_model_location = 'models/agent_model.pth'
 Train_Or_Not = False
 
+Adaptive_Or_Not = False # 是否自适应调节信号相位，False就是固定相位，但也会记录experience
+
 Least_Check_Time = 3
 
 train_gap = 20
