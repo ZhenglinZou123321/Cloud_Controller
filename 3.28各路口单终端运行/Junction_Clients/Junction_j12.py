@@ -1,6 +1,6 @@
 import traci
 # Traci远程连接的设置
-traci.init(port = 14491,host="192.168.100.123")
+traci.init(port = 14491,host="192.168.100.103")
 traci.setOrder(12) #设置优先级，数字越小，越高
 
 from utils.junction_terminal import *

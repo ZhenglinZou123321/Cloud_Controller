@@ -121,6 +121,12 @@ def QP_solver(initial_state_CAV,initial_state_HDV,vehicles_list_this_lane,N,dt,v
     #不等式约束
 
     constraints = []
+    
+    #AX<=B
+    #以X为变量的不等式左侧A
+    LeftM = np.zeros((1, X0.shape[0]))
+    #以X为变量的不等式右侧B
+    RightM = np.zeros((1, 1))
 
     constraints.append(u>=a_min)
     constraints.append(u<=a_max)
@@ -167,16 +173,14 @@ def QP_solver(initial_state_CAV,initial_state_HDV,vehicles_list_this_lane,N,dt,v
             HDVcons = HDVcons_left @ HDVcons_right
             HDVcons = HDVcons.reshape(1,-1)
             HDVconsM = construct_block_diagonal_matrix(HDVcons, N)
-            #lane_length = traci.lane.getLength(lane_now) 
-            lane_length = Global_Vars.JuncLib[intersection_id].lanes_length[lane_now]
+            lane_length = traci.lane.getLength(lane_now)
             LHDVsafe = np.vstack([lane_length-L_safe-6] * N)
-            Inequal_with_u = HDVconsM @ B_tilde
-            Inequal_right = LHDVsafe - HDVconsM @ A_tilde @ X0 + signal_matrix
-
-
-
-
-
+            #Inequal_with_u = HDVconsM @ B_tilde
+            #Inequal_right = LHDVsafe - HDVconsM @ A_tilde @ X0 + signal_matrix
+            LeftM = np.vstack((LeftM, HDVconsM))
+            Soft = cp.Variable((N,1), nonneg=False)
+            RightM = np.vstack((RightM, LHDVsafe + signal_matrix - Soft))  #***********这里没有严格去验证，这个signal_matrix加在这里对不对？
+            
             #硬约束
             # 加入不等式约束~~~~~~~~~~~~~
             #constraints.append(Inequal_with_u @ u <= Inequal_right)
@@ -184,8 +188,8 @@ def QP_solver(initial_state_CAV,initial_state_HDV,vehicles_list_this_lane,N,dt,v
 
             #软约束
             #加入等式约束 同时更改目标函数
-            Soft = cp.Variable((N,1), nonneg=False)
-            constraints.append(Inequal_with_u @ u + Soft <= Inequal_right)
+            #Soft = cp.Variable((N,1), nonneg=False)
+            #constraints.append(Inequal_with_u @ u + Soft <= Inequal_right)
 
             #constraints.append(u <= np.linalg.inv(Inequal_with_u) @ Inequal_right)
 
@@ -202,10 +206,12 @@ def QP_solver(initial_state_CAV,initial_state_HDV,vehicles_list_this_lane,N,dt,v
                 HDVcons = HDVcons.reshape(1, -1)
                 HDVconsM = construct_block_diagonal_matrix(HDVcons,N)
                 LHDVsafe = np.vstack([initial_state_HDV[HDV_id_list.index(vehicles_list_this_lane[idx-1])][0]-L_safe]*N)
-                Inequal_with_u = HDVconsM @ B_tilde
-                Inequal_right = LHDVsafe - HDVconsM @ A_tilde @ X0
+                LeftM = np.vstack((LeftM, HDVconsM))
+                RightM = np.vstack((RightM, LHDVsafe))
+                #Inequal_with_u = HDVconsM @ B_tilde
+                #Inequal_right = LHDVsafe - HDVconsM @ A_tilde @ X0
                 # 加入不等式约束~~~~~~~~~~~~~
-                constraints.append(Inequal_with_u @ u <= Inequal_right)
+                #constraints.append(Inequal_with_u @ u <= Inequal_right)
                 #IDM lower_control
 
 
@@ -215,10 +221,12 @@ def QP_solver(initial_state_CAV,initial_state_HDV,vehicles_list_this_lane,N,dt,v
                 CAVcons = CAVcons.reshape(1, -1)
                 CAVconsM = construct_block_diagonal_matrix(CAVcons,N)
                 LCAVsafe = np.vstack([-L_safe]*N)
-                Inequal_with_u = CAVconsM @ B_tilde
-                Inequal_right = -1 *CAVconsM @ A_tilde @ X0 + LCAVsafe
+                LeftM = np.vstack((LeftM, CAVconsM))
+                RightM = np.vstack((RightM, LCAVsafe))
+                #Inequal_with_u = CAVconsM @ B_tilde
+                #Inequal_right = -1 *CAVconsM @ A_tilde @ X0 + LCAVsafe
                 # 加入不等式约束~~~~~~~~~~~~~
-                constraints.append(Inequal_with_u @ u <= Inequal_right)
+                #constraints.append(Inequal_with_u @ u <= Inequal_right)
             #Lower_control_signal[vehicle_id] = idm_acc
 
     #限速
@@ -228,6 +236,15 @@ def QP_solver(initial_state_CAV,initial_state_HDV,vehicles_list_this_lane,N,dt,v
     Vtake = construct_block_diagonal_matrix(speed_little_matrix,num_CAV)
     VtakeM = construct_block_diagonal_matrix(Vtake,N)
 
+    LeftM = np.vstack((LeftM, VtakeM))
+    LeftM = np.vstack((LeftM, -1 * VtakeM))    
+    RightM = np.vstack((RightM, VmaxM))
+    RightM = np.vstack((RightM, -VminM))
+
+    constraints.append(LeftM @ B_tilde @ u <= RightM - LeftM @ A_tilde @ X0)
+
+
+    '''
     #v_max:
     Inequal_with_u = VtakeM @ B_tilde
     Inequal_right = VmaxM - VtakeM @ A_tilde @ X0
@@ -237,7 +254,7 @@ def QP_solver(initial_state_CAV,initial_state_HDV,vehicles_list_this_lane,N,dt,v
     Inequal_with_u = -1 * VtakeM @ B_tilde
     Inequal_right = VtakeM @ A_tilde @ X0 - VminM
     # 加入不等式约束~~~~~~~~~~~~~
-    constraints.append(Inequal_with_u @ u <= Inequal_right)
+    constraints.append(Inequal_with_u @ u <= Inequal_right)'''
 
     #objective = cp.Minimize(cp.quad_form(u,half_H_qp)+ C_T @ u)   硬约束
     objective = 0

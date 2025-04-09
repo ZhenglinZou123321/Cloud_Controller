@@ -1,6 +1,6 @@
 import traci
 # Traci远程连接的设置
-traci.init(port = 14491,host="192.168.100.123")
+traci.init(port = 14491,host="192.168.100.103")
 traci.setOrder(0) #设置优先级，数字越小，越高
 #print('111')
 import time
@@ -30,6 +30,14 @@ Record_Gap = 600/Global_Vars.dt
 with open('traffic_data_gaussian.csv', mode='w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(['time', 'road_id', 'vehicle_count', 'average_speed'])
+
+with open('Travel_time_datas.csv',mode='w',newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(['vehicle_id','Travel_time'])
+
+with open('Waiting_time_datas.csv',mode='w',newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(['vehicle_id','Waiting_time'])
 
 lane_keys = Global_Vars.lane_index_dict.keys()
 
@@ -71,6 +79,8 @@ if __name__ == '__main__':
     print(Global_Vars.LightLib)
     LightLib_dict = {}
     VehicleLib_dict = {}
+    Travel_Time = {}
+    Waiting_Time = {}
 
     while traci.simulation.getMinExpectedNumber() > 0:
 
@@ -106,7 +116,16 @@ if __name__ == '__main__':
                 vehicleclass = Global_Vars.Vehicle(vehicle_id,vehicle_id[0:3])
                 Global_Vars.VehicleLib[vehicle_id] = vehicleclass
             Global_Vars.VehicleLib[vehicle_id].update()
+
+            if Global_Vars.VehicleLib[vehicle_id].speed <=0:
+                if vehicle_id not in Waiting_Time.keys():
+                    Waiting_Time[vehicle_id] = 1
+                else:
+                    Waiting_Time[vehicle_id] += 1
+
             if Global_Vars.VehicleLib[vehicle_id].running == False:
+                Global_Vars.VehicleLib[vehicle_id].time_exit = Global_Vars.simulate_info.now_time
+                Travel_Time[vehicle_id] = Global_Vars.VehicleLib[vehicle_id].time_exit - Global_Vars.VehicleLib[vehicle_id].time_entry
                 to_remove.add(vehicle_id)
                 del Global_Vars.VehicleLib[vehicle_id]
                 continue
@@ -135,6 +154,18 @@ if __name__ == '__main__':
                     for sstep in lane_statistic[lane_key].keys():
                         writer.writerow([sstep, lane_key, lane_statistic[lane_key][sstep]['vehicle_count'], lane_statistic[lane_key][sstep]['average_speed']])
                     lane_statistic[lane_key]={}
+            with open('Travel_time_datas.csv',mode='w',newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(['vehicle_id','Travel_time'])
+                for vehicle_id in Travel_Time.keys():
+                    writer.writerow([vehicle_id,Travel_Time[vehicle_id]])
+                    
+            with open('Waiting_time_datas.csv',mode='w',newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(['vehicle_id','Waiting_time'])
+                for vehicle_id in Waiting_Time.keys():
+                    writer.writerow([vehicle_id,Waiting_Time[vehicle_id]])
+                
             # per time
             # lane_statistic[lane_key][time]={'vehicle_count':0,'average_speed':0}
             merge_and_save_memory([Light_threads[i].agent for i in range(len(Global_Vars.Intelligent_Sigal_List))],'datas.json')

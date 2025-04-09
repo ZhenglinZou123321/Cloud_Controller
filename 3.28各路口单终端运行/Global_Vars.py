@@ -144,6 +144,8 @@ class Vehicle():
         self.control_signal_new = []
         self.time_when_cal = 0
         self.dt = dt
+        self.time_entry = simulate_info.now_time
+        self.time_exit = 0
         self.update()
 
     def update(self):
@@ -183,14 +185,21 @@ class Vehicle():
         relative_speed = current_speed - front_vehicle_speed
         s_star = s_0 + current_speed * T + (current_speed * relative_speed) / (2 * np.sqrt(a_max * b))
         acceleration = a_max * (1 - (current_speed / V_0) ** delta - (s_star / gap) ** 2)
+
         return min(max(acceleration,MIN_ACCEL), MAX_ACCEL)
     
-    def acceleration_control(self,time_now,dt):
+    def acceleration_control(self,time_now,dt,junc_id,lane_id):
         mpc_acc = self.get_control_signal(time_now, dt)
         if self.leader != None:
             idm_acc = self.idm_acceleration(self.speed, VehicleLib[self.leader[0]].speed, self.leader[1], front_vehicle_id=None)
-        else:
-            idm_acc = 99
+        else: #如果它没有前车，那么就是头车，需要考虑红绿灯约束
+            if LightLib[junc_id].phase in ('r','y'):
+                #红绿灯约束
+                relative_speed = self.speed - 0
+                s_star = s_0 + self.speed * T + (self.speed * relative_speed) / (2 * np.sqrt(a_max * b))
+                gap = JuncLib[junc_id].lanes_length[lane_id]
+                idm_acc = a_max * (1 - (self.speed / V_0) ** delta - (s_star / gap) ** 2)
+            
         if mpc_acc != None and idm_acc != None:
             acc = min(mpc_acc,idm_acc)
             if acc == mpc_acc:
@@ -250,10 +259,10 @@ class Junc():
                 VehicleLib[vehicle_id].update()
     def Vehicle_Control(self):
         for laneID in self.lane_ids:
-            for vehicle_id in self.vehicle_ids[laneID]:
+            for (idx,vehicle_id) in enumerate(self.vehicle_ids[laneID]):
                 if vehicle_id[0:3] == 'CAV':
                     #print(simulate_info.now_time)
-                    VehicleLib[vehicle_id].acceleration_control(simulate_info.now_time,dt)
+                    VehicleLib[vehicle_id].acceleration_control(simulate_info.now_time,dt,id,laneID)
 
     def Conv_from_dict(self, dict):
         self.vehicle_num = dict['vehicle_num']
