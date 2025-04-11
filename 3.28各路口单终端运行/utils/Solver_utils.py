@@ -173,10 +173,6 @@ def QP_solver(initial_state_CAV,initial_state_HDV,vehicles_list_this_lane,N,dt,v
             Inequal_with_u = HDVconsM @ B_tilde
             Inequal_right = LHDVsafe - HDVconsM @ A_tilde @ X0 + signal_matrix
 
-
-
-
-
             #硬约束
             # 加入不等式约束~~~~~~~~~~~~~
             #constraints.append(Inequal_with_u @ u <= Inequal_right)
@@ -244,7 +240,7 @@ def QP_solver(initial_state_CAV,initial_state_HDV,vehicles_list_this_lane,N,dt,v
     #objective = cp.Minimize(cp.quad_form(u, half_H_qp) + C_T @ u + 100 * cp.norm(Soft, 2))
     try:
         #print('有CAV位于首位')
-        objective = cp.Minimize(cp.quad_form(u, half_H_qp) + C_T @ u + 10*cp.norm(Soft,2))
+        objective = cp.Minimize(cp.quad_form(u, half_H_qp) + C_T @ u + 20*cp.norm(Soft,2))
     except:
         #print('无CAV位于首位')
         objective = cp.Minimize(cp.quad_form(u, half_H_qp) + C_T @ u)

@@ -62,9 +62,9 @@ vehicles = []
 V_0 = MAX_SPEED  # 期望速度 (m/s)，可根据实际情况调整
 T = 1.5  # 期望车头时距 (s)，可根据实际情况调整
 a_max = MAX_ACCEL  # 最大加速度 (m/s²)，与前面已定义的保持一致或按需调整
-b = -1*MIN_ACCEL  # 舒适制动减速度 (m/s²)，可根据实际情况调整
+b = a_max  # 舒适制动减速度 (m/s²)，可根据实际情况调整
 s_0 = 1  # 最小间距 (m)，可根据实际情况调整
-delta = 4  # 速度影响指数参数，可根据实际情况调整
+delta = 6  # 速度影响指数参数，可根据实际情况调整  delta较大，车辆会更早的去往期望速度变化
 
 
 
@@ -190,18 +190,23 @@ class Vehicle():
     
     def acceleration_control(self,time_now,dt,junc_id,lane_id):
         mpc_acc = self.get_control_signal(time_now, dt)
-        if self.leader != None:
+        if self.leader != None and (VehicleLib[self.leader[0]].lane == self.lane): #如果它有前车，并且前车在同一车道上
             idm_acc = self.idm_acceleration(self.speed, VehicleLib[self.leader[0]].speed, self.leader[1], front_vehicle_id=None)
-        else: #如果它没有前车，那么就是头车，需要考虑红绿灯约束
-            if LightLib[junc_id].phase in ('r','y'):
+        else: #如果它没有前车，或前车与其不在一个车道那么就是头车，需要考虑红绿灯约束
+            light = LightLib[junc_id]
+            print(light.phase[lane_id])
+            if light.phase[lane_id] in ['r','y']:
                 #红绿灯约束
                 relative_speed = self.speed - 0
-                s_star = s_0 + self.speed * T + (self.speed * relative_speed) / (2 * np.sqrt(a_max * b))
-                gap = JuncLib[junc_id].lanes_length[lane_id]
-                idm_acc = a_max * (1 - (self.speed / V_0) ** delta - (s_star / gap) ** 2)
+                s_star = s_0 + self.speed * T + (self.speed * relative_speed) / (2 * np.sqrt(-1*MIN_ACCEL * b)) #b=3 Min_accel = -20
+                gap = JuncLib[junc_id].lanes_length[lane_id] - 1 - self.laneposition
+                idm_acc = -1*MIN_ACCEL * (1 - (self.speed / V_0) ** delta - (s_star / gap) ** 2)
+            else:
+                idm_acc = 99
             
         if mpc_acc != None and idm_acc != None:
             acc = min(mpc_acc,idm_acc)
+            print(f"{self.id} MPC:{mpc_acc} IDM:{idm_acc}")
             if acc == mpc_acc:
                 traci.vehicle.setColor(self.id, (0, 0, 255)) # MPC = blue
             else:
@@ -262,7 +267,7 @@ class Junc():
             for (idx,vehicle_id) in enumerate(self.vehicle_ids[laneID]):
                 if vehicle_id[0:3] == 'CAV':
                     #print(simulate_info.now_time)
-                    VehicleLib[vehicle_id].acceleration_control(simulate_info.now_time,dt,id,laneID)
+                    VehicleLib[vehicle_id].acceleration_control(simulate_info.now_time,dt,self.id,laneID)
 
     def Conv_from_dict(self, dict):
         self.vehicle_num = dict['vehicle_num']
