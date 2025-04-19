@@ -20,6 +20,7 @@ import msgpack
 import redis
 r = redis.Redis(host='192.168.100.21', port=6379, db=0)
 r.flushdb()
+print('已清空redis')
 
 # 获取当前脚本所在的目录
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -61,8 +62,8 @@ if __name__ == '__main__':
     for lane , length in Global_Vars.Lanes_length.items():
         r.set(lane,length)
 
-    r.set('N',Global_Vars.N)
-    r.set('dt',Global_Vars.dt)
+    r.set('N',pickle.dumps(Global_Vars.N))
+    r.set('dt',pickle.dumps(Global_Vars.dt))
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

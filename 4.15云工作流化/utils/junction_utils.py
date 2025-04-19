@@ -24,11 +24,12 @@ class JunctionController():
         self.L_safe = L_safe
         self.log_file = f"logs/junction_{self.junction_id}.log"
         self.redis_base = redis_base
-
-        self.junction_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        self.junction_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.junction_socket.setsockopt(socket.SOL_SOCKET,socket.SO_KEEPALIVE,1)
-        self.junction_socket.connect((task1_ip,task1_port))
+        if self.junction_id == 'j7':
+            self.junction_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            self.junction_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.junction_socket.setsockopt(socket.SOL_SOCKET,socket.SO_KEEPALIVE,1)
+            self.junction_socket.connect((task1_ip,task1_port))
+            print('连接成功')
 
     def get_last_quarter_every_lane(self):
         lane_ids = self.traffic_light_to_lanes[self.junction_id]
@@ -89,15 +90,15 @@ class JunctionController():
                 phase = Global_Vars.LightLib[self.junction_id].phase[lane_id]#get_lane_state(one_lane, lane_index_dict, lane_adj)
                 remaining_time = Global_Vars.LightLib[self.junction_id].remaining_time[lane_id]
 
-                key = [self.id + '#' + lane_id +'#'+  step]
-                self.redis_base.hset(key,'X0',X0)
-                self.redis_base.hset(key,'num_CAV',num_CAV)
-                self.redis_base.hset(key,'vehicle_list_this_lane',vehicles_list_this_lane)
-                self.redis_base.hset(key,'CAV_id_list',CAV_id_list)
-                self.redis_base.hset(key,'HDV_id_list',HDV_id_list)
-                self.redis_base.hset(key,'initial_state_HDV',initial_state_HDV)
-                self.redis_base.hset(key,'phase',phase)
-                self.redis_base.hset(key,'remaining_time',remaining_time)
+                key = self.junction_id + '#' + lane_id +'#'+  str(step)
+                self.redis_base.hset(key,'X0',pickle.dumps(X0))
+                self.redis_base.hset(key,'num_CAV',pickle.dumps(num_CAV))
+                self.redis_base.hset(key,'vehicle_list_this_lane',pickle.dumps(vehicles_list_this_lane))
+                self.redis_base.hset(key,'CAV_id_list',pickle.dumps(CAV_id_list))
+                self.redis_base.hset(key,'HDV_id_list',pickle.dumps(HDV_id_list))
+                self.redis_base.hset(key,'initial_state_HDV',pickle.dumps(initial_state_HDV))
+                self.redis_base.hset(key,'phase',pickle.dumps(phase))
+                self.redis_base.hset(key,'remaining_time',pickle.dumps(remaining_time))
 
                 self.junction_socket.send(pickle.dumps(key)+end)
                 msg = b''
@@ -124,5 +125,6 @@ class JunctionController():
 
     def run(self,step):
         self.get_last_quarter_every_lane()
-        self.update_cav_speeds(step)
+        if self.junction_id == 'j7':
+            self.update_cav_speeds(step)
 

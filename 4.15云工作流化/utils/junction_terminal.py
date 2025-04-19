@@ -4,14 +4,14 @@ import msgpack
 import redis
 r = redis.Redis(host='192.168.100.21', port=6379, db=0)
 
-def junction_run(id,task1_ip):
+def junction_run(id,task1_ip,task1_port):
     for junc in Global_Vars.Intelligent_Sigal_List:
         lightclass = Global_Vars.Light(junc)
         juncclass = Global_Vars.Junc(junc)
         Global_Vars.LightLib[junc] = lightclass
         Global_Vars.JuncLib[junc] = juncclass
     id = id
-    junc_controller = JunctionController(id,Global_Vars.traffic_light_to_lanes,Global_Vars.N,Global_Vars.dt,Global_Vars.L_safe,redis_base=r,task1_ip=task1_ip,task1_port=7070)
+    junc_controller = JunctionController(id,Global_Vars.traffic_light_to_lanes,Global_Vars.N,Global_Vars.dt,Global_Vars.L_safe,redis_base=r,task1_ip=task1_ip,task1_port=task1_port)
     Global_Vars.junction_threads[id]= junc_controller
     JuncLib_dict = {}
     while traci.simulation.getMinExpectedNumber() > 0:

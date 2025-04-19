@@ -8,6 +8,6 @@ from utils.junction_terminal import *
 
 if __name__ == "__main__":
     id = 'j10'
-    junction_run(id,'192.168.110.11')
+    junction_run(id,'192.168.100.34',7010)
 
 
