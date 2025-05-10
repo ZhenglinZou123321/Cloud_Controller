@@ -244,7 +244,7 @@ class Junc():
         self.lane_ids = traffic_light_to_lanes[self.id]
         self.vehicle_num = {laneID:0 for laneID in self.lane_ids}
         self.lanes_length = {laneID:traci.lane.getLength(laneID) for laneID in self.lane_ids}
-        self.vehicle_ids = {laneID:() for laneID in self.lane_ids}
+        self.vehicle_ids = {laneID:[] for laneID in self.lane_ids}
         # 订阅车道数据
         for lane_id in self.lane_ids:
             traci.lane.subscribe(lane_id, [traci.constants.LAST_STEP_VEHICLE_NUMBER, traci.constants.LAST_STEP_VEHICLE_ID_LIST])
@@ -263,6 +263,7 @@ class Junc():
                     VehicleLib[vehicle_id] = vehicleclass
 
                 VehicleLib[vehicle_id].update()
+        print(junction_counts)
     def Vehicle_Control(self):
         for laneID in self.lane_ids:
             for (idx,vehicle_id) in enumerate(self.vehicle_ids[laneID]):
@@ -270,10 +271,22 @@ class Junc():
                     #print(simulate_info.now_time)
                     VehicleLib[vehicle_id].acceleration_control(simulate_info.now_time,dt,self.id,laneID)
 
-    def Conv_from_dict(self, dict):
+    def Conv_from_dict(self, dict,Simpart = False):
         self.vehicle_num = dict['vehicle_num']
         self.lanes_length = dict['lanes_length']
+        self.vehicle_ids_old = self.vehicle_ids.copy()
         self.vehicle_ids = dict['vehicle_ids']
+        if Simpart == True:
+            vehicle_id_list_old = []
+            vehicle_id_list_new = []
+            for lane_id in self.lane_ids:
+                if lane_id[-1:] == '0':
+                    continue
+                vehicle_id_list_old += self.vehicle_ids_old[lane_id]
+                vehicle_id_list_new += self.vehicle_ids[lane_id]
+            junction_counts[self.id] += len(set(vehicle_id_list_old) - set(vehicle_id_list_new))
+
+ 
     def Conv_to_dict(self):
         return {
             'vehicle_num': self.vehicle_num,

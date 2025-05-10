@@ -75,7 +75,8 @@ def junction_run(id):
         r.hset("JuncLib",id,JuncLib_dict[id])
 
         r.set("Vehicle_IDs",msgpack.packb(list(Global_Vars.Vehicle_IDs), use_bin_type=True))
-
+        
+        Global_Vars.step += 1
         traci.simulationStep()
 
 

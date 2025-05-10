@@ -1,0 +1,66 @@
+检查 :j10_36_1
+Traceback (most recent call last):
+  File "/Projects/Cloud_Controller/3.13/utils/VehicleController_utils.py", line 115, in run
+    self.phase,self.remaining_time = get_remaining_phase_and_time(self.lane_now)
+  File "/Projects/Cloud_Controller/3.13/utils/VehicleController_utils.py", line 34, in get_remaining_phase_and_time
+    x, rest = lane_id.split("t", 1)  # 分割出 X 和剩余部分
+ValueError: not enough values to unpack (expected 2, got 1)
+
+解决：
+这应该是在交通路口内这种情况下，不需要去寻找剩余时长，因为已经进路口了
+
+
+
+
+j7  计算耗时: 0.0930 秒
+CAV_18的前车是CAV_9
+CAV thread running
+2
+Exception in thread Thread-9:
+Traceback (most recent call last):
+  File "/root/anaconda3/envs/mulint/lib/python3.9/threading.py", line 980, in _bootstrap_inner
+    self.run()
+  File "/Projects/Cloud_Controller/3.13/utils/traffic_light.py", line 349, in run
+    reward = get_reward(self.Traffic_Signal_id,self.agent,Action_list,Global_Vars.junction_counts)
+  File "/Projects/Cloud_Controller/3.13/utils/traffic_light.py", line 227, in get_reward
+    passed_count = junction_counts[intersection_id] - agent.passed_count
+KeyError: 'j7'
+
+
+
+
+加入红灯停约束
+有CAV位于首位
+/root/anaconda3/envs/mulint/lib/python3.9/site-packages/cvxpy/problems/problem.py:1510: UserWarning: 
+    The problem is either infeasible or unbounded, but the solver
+    cannot tell which. Disable any solver-specific presolve methods
+    and re-solve to determine the precise problem status.
+
+    For GUROBI and CPLEX you can automatically perform this re-solve
+    with the keyword argument prob.solve(reoptimize=True, ...).
+    
+
+
+
+
+j12  计算耗时: 15.3845 秒
+CAV_6 施加MPC控制量为：None
+CAV_6已施加加速度控制量：None
+Traceback (most recent call last):
+  File "/Projects/Cloud_Controller/3.13/utils/VehicleController_utils.py", line 124, in run
+    self.phase,self.remaining_time = get_remaining_phase_and_time(self.lane_now)
+  File "/Projects/Cloud_Controller/3.13/utils/VehicleController_utils.py", line 46, in get_remaining_phase_and_time
+    next_switch_time = traci.trafficlight.getNextSwitch(intersection_id)
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/traci/_trafficlight.py", line 242, in getNextSwitch
+    return self._getUniversal(tc.TL_NEXT_SWITCH, tlsID)
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/traci/domain.py", line 149, in _getUniversal
+    return _parse(self._retValFunc, varID, self._getCmd(varID, objectID, format, *values))
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/traci/domain.py", line 154, in _getCmd
+    r = self._connection._sendCmd(self._cmdGetID, varID, objID, format, *values)
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/traci/connection.py", line 232, in _sendCmd
+    return self._sendExact()
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/traci/connection.py", line 144, in _sendExact
+    raise TraCIException(err, prefix[1], _RESULTS[prefix[2]])
+traci.exceptions.TraCIException: Traffic light 'j1' is not known
+CAV_0 施加加速度控制量失败
+CAV_6 施加MPC控制量为：None

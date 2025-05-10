@@ -27,7 +27,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 # 创建交通数据记录表
-Record_Gap = 600/Global_Vars.dt
+Record_Gap = 60/Global_Vars.dt
 with open('traffic_data_gaussian.csv', mode='w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(['time', 'road_id', 'vehicle_count', 'average_speed'])
@@ -62,6 +62,7 @@ if __name__ == '__main__':
     for lane , length in Global_Vars.Lanes_length.items():
         r.set(lane,length)
 
+
     r.set('N',pickle.dumps(Global_Vars.N))
     r.set('dt',pickle.dumps(Global_Vars.dt))
     
@@ -89,33 +90,39 @@ if __name__ == '__main__':
     Waiting_Time = {}
 
     while traci.simulation.getMinExpectedNumber() > 0:
-
+        start_time = time.time()
+        print(Global_Vars.junction_counts)
         Global_Vars.simulate_info.update()
         simulate_info_packed = msgpack.packb(Global_Vars.simulate_info.__dict__, use_bin_type=True)
         r.set("simulate_info",simulate_info_packed)
 
+        print(f'仿真信息更新 time {time.time()-start_time}')
+        start_time = time.time()
         try:# 在junction_terminal中，用了hash的形式存储junc，因此JuncLib是hash类型的。
             # hash类型就允许我们在数据库里单独取这个字典中的某一项进行读写
             JuncLib_dict = r.hgetall("JuncLib")
             for key in JuncLib_dict.keys():
                 key_str = key.decode()
-                Global_Vars.JuncLib[key_str].Conv_from_dict(msgpack.unpackb(JuncLib_dict[key], raw=False))
+                Global_Vars.JuncLib[key_str].Conv_from_dict(msgpack.unpackb(JuncLib_dict[key], raw=False),Simpart = True)
         except:
             print("未能从redis读取JuncLib")
-
+        print(f'JuncLib 更新 time {time.time()-start_time}')
         # 对于LightLib，是将整个字典变成字符串形式存储的，所以是string形式
         # 不能够单独对其中某一项进行读写，只能将其全部下载下来，再全部上传来更新
+        start_time = time.time()
         for junc in Global_Vars.Intelligent_Sigal_List:
             Global_Vars.LightLib[junc].update()
             LightLib_dict[junc] = Global_Vars.LightLib[junc].Conv_to_dict()  
         lights_packed = msgpack.packb(LightLib_dict, use_bin_type=True)
         r.set("LightLib",lights_packed)
+        print(f'LightLib更新 time {time.time()-start_time}')
 
         try:
             Global_Vars.Vehicle_IDs = set(msgpack.unpackb(r.get("Vehicle_IDs"), raw=False))
         except:
             print("未能从redis读取Vehicle_IDs")
 
+        start_time = time.time()
         to_remove = set()
         for vehicle_id in Global_Vars.Vehicle_IDs:
             if vehicle_id not in Global_Vars.VehicleLib:
@@ -142,7 +149,8 @@ if __name__ == '__main__':
                     continue
                 lane_average_speed[Global_Vars.VehicleLib[vehicle_id].lane] = (lane_average_speed[Global_Vars.VehicleLib[vehicle_id].lane]*lane_count[Global_Vars.VehicleLib[vehicle_id].lane] + Global_Vars.VehicleLib[vehicle_id].speed)/(lane_count[Global_Vars.VehicleLib[vehicle_id].lane]+1)
                 lane_count[Global_Vars.VehicleLib[vehicle_id].lane] += 1
-        Global_Vars.Vehicle_IDs -= to_remove   
+        Global_Vars.Vehicle_IDs -= to_remove  
+        print(f'Vehicle信息更新 time {time.time()-start_time}') 
          
         r.set("Vehicle_IDs",msgpack.packb(list(Global_Vars.Vehicle_IDs), use_bin_type=True))
 
