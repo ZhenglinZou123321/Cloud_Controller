@@ -271,6 +271,7 @@ class Junc():
                     #print(simulate_info.now_time)
                     VehicleLib[vehicle_id].acceleration_control(simulate_info.now_time,dt,self.id,laneID)
 
+
     def Conv_from_dict(self, dict,Simpart = False):
         self.vehicle_num = dict['vehicle_num']
         self.lanes_length = dict['lanes_length']

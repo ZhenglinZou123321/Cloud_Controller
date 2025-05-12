@@ -4,7 +4,7 @@ import msgpack
 import redis
 r = redis.Redis(host='192.168.100.21', port=6379, db=0)
 
-def junction_run(id,task1_ip,task1_port,Control_Or_Not=False):
+def junction_run(id,task1_ip,task1_port,Control_Or_Not=True):
     for junc in Global_Vars.Intelligent_Sigal_List:
         lightclass = Global_Vars.Light(junc)
         juncclass = Global_Vars.Junc(junc)

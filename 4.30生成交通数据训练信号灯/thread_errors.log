@@ -1,0 +1,84 @@
+2025-05-10 18:52:45,416 - Thread-5 - ERROR - 函数 run 异常: linear(): argument 'input' (position 1) must be Tensor, not numpy.ndarray
+Traceback (most recent call last):
+  File "/Projects/Cloud_Controller/4.30生成交通数据训练信号灯/utils/traffic_light.py", line 31, in wrapper
+    return func(*args, **kwargs)
+  File "/Projects/Cloud_Controller/4.30生成交通数据训练信号灯/utils/traffic_light.py", line 457, in run
+    action,log_prob = self.agent.act(new_state)
+  File "/Projects/Cloud_Controller/4.30生成交通数据训练信号灯/utils/traffic_light.py", line 353, in act
+    probs = self.policy_network(state)
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/Projects/Cloud_Controller/4.30生成交通数据训练信号灯/utils/traffic_light.py", line 310, in forward
+    x = torch.relu(self.fc1(state))
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/torch/nn/modules/linear.py", line 125, in forward
+    return F.linear(input, self.weight, self.bias)
+TypeError: linear(): argument 'input' (position 1) must be Tensor, not numpy.ndarray
+2025-05-10 18:52:45,417 - Thread-2 - ERROR - 函数 run 异常: linear(): argument 'input' (position 1) must be Tensor, not numpy.ndarray
+Traceback (most recent call last):
+  File "/Projects/Cloud_Controller/4.30生成交通数据训练信号灯/utils/traffic_light.py", line 31, in wrapper
+    return func(*args, **kwargs)
+  File "/Projects/Cloud_Controller/4.30生成交通数据训练信号灯/utils/traffic_light.py", line 457, in run
+    action,log_prob = self.agent.act(new_state)
+  File "/Projects/Cloud_Controller/4.30生成交通数据训练信号灯/utils/traffic_light.py", line 353, in act
+    probs = self.policy_network(state)
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/Projects/Cloud_Controller/4.30生成交通数据训练信号灯/utils/traffic_light.py", line 310, in forward
+    x = torch.relu(self.fc1(state))
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/torch/nn/modules/linear.py", line 125, in forward
+    return F.linear(input, self.weight, self.bias)
+TypeError: linear(): argument 'input' (position 1) must be Tensor, not numpy.ndarray
+2025-05-10 18:52:45,418 - Thread-6 - ERROR - 函数 run 异常: linear(): argument 'input' (position 1) must be Tensor, not numpy.ndarray
+Traceback (most recent call last):
+  File "/Projects/Cloud_Controller/4.30生成交通数据训练信号灯/utils/traffic_light.py", line 31, in wrapper
+    return func(*args, **kwargs)
+  File "/Projects/Cloud_Controller/4.30生成交通数据训练信号灯/utils/traffic_light.py", line 457, in run
+    action,log_prob = self.agent.act(new_state)
+  File "/Projects/Cloud_Controller/4.30生成交通数据训练信号灯/utils/traffic_light.py", line 353, in act
+    probs = self.policy_network(state)
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/Projects/Cloud_Controller/4.30生成交通数据训练信号灯/utils/traffic_light.py", line 310, in forward
+    x = torch.relu(self.fc1(state))
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/torch/nn/modules/linear.py", line 125, in forward
+    return F.linear(input, self.weight, self.bias)
+TypeError: linear(): argument 'input' (position 1) must be Tensor, not numpy.ndarray
+2025-05-10 18:52:45,419 - Thread-3 - ERROR - 函数 run 异常: linear(): argument 'input' (position 1) must be Tensor, not numpy.ndarray
+Traceback (most recent call last):
+  File "/Projects/Cloud_Controller/4.30生成交通数据训练信号灯/utils/traffic_light.py", line 31, in wrapper
+    return func(*args, **kwargs)
+  File "/Projects/Cloud_Controller/4.30生成交通数据训练信号灯/utils/traffic_light.py", line 457, in run
+    action,log_prob = self.agent.act(new_state)
+  File "/Projects/Cloud_Controller/4.30生成交通数据训练信号灯/utils/traffic_light.py", line 353, in act
+    probs = self.policy_network(state)
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/Projects/Cloud_Controller/4.30生成交通数据训练信号灯/utils/traffic_light.py", line 310, in forward
+    x = torch.relu(self.fc1(state))
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/root/anaconda3/envs/mulint/lib/python3.9/site-packages/torch/nn/modules/linear.py", line 125, in forward
+    return F.linear(input, self.weight, self.bias)
+TypeError: linear(): argument 'input' (position 1) must be Tensor, not numpy.ndarray

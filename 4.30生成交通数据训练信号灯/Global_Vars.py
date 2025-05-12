@@ -9,6 +9,7 @@ import numpy as np
 
 
 
+
 class Sim_info():
     def __init__(self):
         self.now_time = traci.simulation.getTime() #simulation time in s

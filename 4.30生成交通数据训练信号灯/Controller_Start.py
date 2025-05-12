@@ -14,13 +14,19 @@ import csv
 from utils.VehicleController_utils import *
 from utils.Solver_utils import *
 from utils.junction_utils import *
-from utils.traffic_light import *
+from utils.traffic_light_未更改状态 import *
 import Global_Vars
 import msgpack
 import redis
+import logging
+import functools
 r = redis.Redis(host='192.168.100.21', port=6379, db=0)
 r.flushdb()
 print('已清空redis')
+
+
+
+
 
 # 获取当前脚本所在的目录
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -91,7 +97,7 @@ if __name__ == '__main__':
 
     while traci.simulation.getMinExpectedNumber() > 0:
         start_time = time.time()
-        print(Global_Vars.junction_counts)
+        #print(Global_Vars.junction_counts)
         Global_Vars.simulate_info.update()
 
         # 对于LightLib，是将整个字典变成字符串形式存储的，所以是string形式
@@ -100,7 +106,7 @@ if __name__ == '__main__':
         for junc in Global_Vars.Intelligent_Sigal_List:
             Global_Vars.LightLib[junc].update()
             Global_Vars.JuncLib[junc].update()
-        print(f'LightLib更新 time {time.time()-start_time}')
+        #print(f'LightLib更新 time {time.time()-start_time}')
 
 
         start_time = time.time()
@@ -130,7 +136,7 @@ if __name__ == '__main__':
                 lane_average_speed[Global_Vars.VehicleLib[vehicle_id].lane] = (lane_average_speed[Global_Vars.VehicleLib[vehicle_id].lane]*lane_count[Global_Vars.VehicleLib[vehicle_id].lane] + Global_Vars.VehicleLib[vehicle_id].speed)/(lane_count[Global_Vars.VehicleLib[vehicle_id].lane]+1)
                 lane_count[Global_Vars.VehicleLib[vehicle_id].lane] += 1
         Global_Vars.Vehicle_IDs -= to_remove  
-        print(f'Vehicle信息更新 time {time.time()-start_time}') 
+        #print(f'Vehicle信息更新 time {time.time()-start_time}') 
          
 
 
